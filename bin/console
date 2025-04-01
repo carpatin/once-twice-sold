@@ -1,0 +1,69 @@
+#!/bin/bash
+
+set -eu
+
+cd "$(dirname -- "$0")/../" || exit 1
+
+if [ $# -eq 0 ]; then
+    printf "CLI tool that automates Docker-related instructions for the local environment!\n\n"
+    printf "Available commands:\n\n"
+    printf "clean-start - Removes the stack, builds a new one, and starts the containers\n"
+    printf "start       - Starts the containers\n"
+    printf "build       - Builds the containers\n"
+    printf "stop        - Stops the containers\n"
+    printf "down        - Removes the containers\n"
+    printf "composer    - Forwards CLI Composer commands to the PHP container\n"
+
+    exit 0
+fi
+
+COMMAND=$1
+
+shift
+
+case $COMMAND in
+    "clean-start" )
+        if [ -v HOST_UID ] && [ -v HOST_GID ]; then
+            echo "Using existing HOST_UID=$HOST_UID"
+            echo -e "Using existing HOST_GID=$HOST_GID\n"
+        else
+            echo -e "HOST_UID or HOST_GID are not set"
+            echo -e "Trying to export ...\n"
+
+            if [ -n "$(id -u)" ] && [ -n "$(id -g)" ]; then
+                HOST_UID=$(id -u)
+                export HOST_UID
+                HOST_GID=$(id -g)
+                export HOST_GID
+
+                echo "Successfully exported HOST_UID=$(id -u)"
+                echo -e "Successfully exported HOST_GID=$(id -g)\n"
+            else
+                echo "Failed to export HOST_UID and HOST_GID"
+                echo "Please export them manually and try again"
+                exit 1
+            fi
+        fi
+
+        docker compose -f docker-compose.yml down
+        docker compose -f docker-compose.yml up -d --build --remove-orphans
+        ;;
+    "start" )
+        docker compose -f docker-compose.yml start
+        ;;
+    "build" )
+        docker compose -f docker-compose.yml build
+        ;;
+    "stop" )
+        docker compose -f docker-compose.yml stop
+        ;;
+    "down" )
+        docker compose -f docker-compose.yml down
+        ;;
+    "websocket-composer" )
+        docker compose -f docker-compose.yml exec websocket composer "$@"
+        ;;
+    * )
+        printf "Error: No such command: %s\n\n" "$COMMAND"
+        printf "Run the binary without any arguments to see the list of available commands\n"
+esac

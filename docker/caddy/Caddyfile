@@ -1,0 +1,13 @@
+{
+    auto_https off
+}
+
+http://{$SERVER_NAME} {
+    root * /srv/app/public
+
+    php_fastcgi unix//var/run/php/fpm.sock
+
+    encode zstd gzip
+
+    file_server
+}

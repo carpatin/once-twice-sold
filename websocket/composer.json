@@ -1,0 +1,20 @@
+{
+  "name": "carpatin/once-twice-sold",
+  "description": "Online auction platform that makes heavy use of WebSockets",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "OnceTwiceSold\\": "src/"
+    }
+  },
+  "require": {
+    "openswoole/core": "^22.2",
+    "vlucas/phpdotenv": "^5.6",
+    "symfony/dependency-injection": "^7.2",
+    "symfony/config": "^7.2",
+    "symfony/polyfill-uuid": "^1.31"
+  },
+  "require-dev": {
+    "openswoole/ide-helper": "^22.1"
+  }
+}
