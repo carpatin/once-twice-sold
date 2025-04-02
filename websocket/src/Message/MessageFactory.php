@@ -6,12 +6,12 @@ namespace OnceTwiceSold\Message;
 
 use JsonException;
 use OnceTwiceSold\Message\BidderToServer\PlaceBid;
-use OnceTwiceSold\Message\BidderToServer\SubscribeToAuctions;
+use OnceTwiceSold\Message\BidderToServer\ListOngoingAuctions;
 use OnceTwiceSold\Message\SellerToServer\StartAuction;
 use OnceTwiceSold\Message\ServerToAll\AuctionEnded;
-use OnceTwiceSold\Message\ServerToAll\AuctionStarted;
 use OnceTwiceSold\Message\ServerToAll\NewHighBid;
-use OnceTwiceSold\Message\ServerToBidder\AuctionsRunning;
+use OnceTwiceSold\Message\ServerToBidder\OngoingAuctions;
+use OnceTwiceSold\Message\ServerToBidder\AuctionStarted;
 use OnceTwiceSold\Message\ServerToBidder\YouLostBid;
 use OnceTwiceSold\Message\ServerToBidder\YouWonItem;
 use OnceTwiceSold\Message\ServerToSeller\YouSoldItem;
@@ -29,12 +29,12 @@ class MessageFactory
 
         return match ($type) {
             MessageTypeEnum::PLACE_BID->value => new PlaceBid($data),
-            MessageTypeEnum::SUBSCRIBE_TO_AUCTIONS->value => new SubscribeToAuctions($data),
+            MessageTypeEnum::LIST_ONGOING_AUCTIONS->value => new ListOngoingAuctions($data),
             MessageTypeEnum::START_AUCTION->value => new StartAuction($data),
             MessageTypeEnum::AUCTION_ENDED->value => new AuctionEnded($data),
             MessageTypeEnum::AUCTION_STARTED->value => new AuctionStarted($data),
             MessageTypeEnum::NEW_HIGH_BID->value => new NewHighBid($data),
-            MessageTypeEnum::AUCTIONS_RUNNING->value => new AuctionsRunning($data),
+            MessageTypeEnum::ONGOING_AUCTIONS->value => new OngoingAuctions($data),
             MessageTypeEnum::YOU_LOST_BID->value => new YouLostBid($data),
             MessageTypeEnum::YOU_WON_ITEM->value => new YouWonItem($data),
             MessageTypeEnum::YOU_SOLD_ITEM->value => new YouSoldItem($data),

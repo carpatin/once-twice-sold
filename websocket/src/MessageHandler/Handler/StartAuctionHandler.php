@@ -6,18 +6,20 @@ namespace OnceTwiceSold\MessageHandler\Handler;
 
 use Closure;
 use DateTime;
-use OnceTwiceSold\Auction\Auction;
-use OnceTwiceSold\Auction\AuctionsManager;
 use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\MessageTypeEnum;
 use OnceTwiceSold\Message\SellerToServer\StartAuction;
+use OnceTwiceSold\Message\ServerToBidder\AuctionStarted;
 use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
+use OnceTwiceSold\Model\Auction;
+use OnceTwiceSold\Persistence\AuctionsRepository;
+use OnceTwiceSold\WebSocketServer\Participants;
 
-class StartAuctionHandler implements MessageHandlerInterface
+readonly class StartAuctionHandler implements MessageHandlerInterface
 {
     public function __construct(
-        private AuctionsManager $auctionsManager,
+        private AuctionsRepository $auctionsRepository,
     ) {
         //
     }
@@ -25,11 +27,11 @@ class StartAuctionHandler implements MessageHandlerInterface
     /**
      * @param StartAuction $message
      */
-    public function handle(int $connection, AbstractMessage $message, Closure $pushCallback): void
+    public function handle(Participants $participants, AbstractMessage $message, Closure $pushCallback): void
     {
-        $seller = $connection;
-        $auction = Auction::createFromMessage($message);
-        $this->auctionsManager->registerAuction($seller, $auction);
+        $seller = $participants->getCurrentParticipant();
+        $auction = Auction::createNewFromMessage($seller, $message);
+        $this->auctionsRepository->persistAuction($auction);
 
         $pushMessages = [
             $seller => new YouStartedAuction([
@@ -38,14 +40,23 @@ class StartAuctionHandler implements MessageHandlerInterface
                 'starting_price' => $auction->getStartingPrice(),
                 'desired_price'  => $auction->getDesiredPrice(),
                 'started_at'     => (new DateTime())
-                    ->setTimestamp($auction->getStartedAtTimestamp())->format(DateTime::ATOM),
+                    ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),
                 'ends_at'        => (new DateTime())
-                    ->setTimestamp($auction->getEndsAtTimestamp())->format(DateTime::ATOM),
+                    ->setTimestamp($auction->getEndsAt())->format(DateTime::ATOM),
             ]),
         ];
 
-        // TODO: foreach of the other connections send a AuctionStarted message
-
+        foreach ($participants->getOtherParticipants() as $connection) {
+            $pushMessages[$connection] = new AuctionStarted([
+                'auction_id'     => $auction->getUuid(),
+                'title'          => $auction->getTitle(),
+                'starting_price' => $auction->getStartingPrice(),
+                'started_at'     => (new DateTime())
+                    ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),
+                'ends_at'        => (new DateTime())
+                    ->setTimestamp($auction->getEndsAt())->format(DateTime::ATOM),
+            ]);
+        }
         $pushCallback($pushMessages);
     }
 

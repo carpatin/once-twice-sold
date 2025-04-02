@@ -9,6 +9,8 @@ use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\ErrorMessage;
 use OnceTwiceSold\Message\MessageFactory;
 use OnceTwiceSold\MessageHandler\MessageHandlerRegistry;
+use OnceTwiceSold\Persistence\AuctionsRepository;
+use OnceTwiceSold\WebSocketServer\Participants;
 use OpenSwoole\Http\Request;
 use OpenSwoole\WebSocket\Frame;
 use OpenSwoole\WebSocket\Server;
@@ -17,10 +19,10 @@ class WebSocketServer
 {
     private Server $server;
 
-
     public function __construct(
         private readonly string $listenHost,
         private readonly int $listenPort,
+        private AuctionsRepository $auctionsRepository,
         private MessageFactory $messageFactory,
         private MessageHandlerRegistry $messageHandlerRegistry,
     ) {
@@ -30,6 +32,9 @@ class WebSocketServer
         $this->server->on('Message', [$this, 'onMessage']);
         $this->server->on('Close', [$this, 'onClose']);
         $this->server->on('Disconnect', [$this, 'onDisconnect']);
+
+        // initialize memory tables before starting the server
+        $this->auctionsRepository->initializeTables();
     }
 
     public function onStart(Server $server): void
@@ -57,20 +62,21 @@ class WebSocketServer
                  * @var AbstractMessage $message
                  */
                 foreach ($messages as $connection => $message) {
-                    $server->push($connection, $message->toJson());
+                    if ($server->isEstablished($connection)) {
+                        $server->push($connection, $message->toJson());
+                    }
                 }
             };
-
-            $handler->handle($connection, $message, $pushCallback);
+            $handler->handle($this->prepareParticipants($connection, $server), $message, $pushCallback);
         } catch (Exception $exception) {
             $message = ErrorMessage::createForException($exception);
             $server->push($connection, $message->toJson());
         }
     }
 
-    public function onClose(Server $server, int $connectionId): void
+    public function onClose(Server $server, int $connection): void
     {
-        echo "Connection close: $connectionId".PHP_EOL;
+        echo "Connection close: $connection".PHP_EOL;
     }
 
     public function onDisconnect(Server $server, int $fd): void
@@ -81,5 +87,13 @@ class WebSocketServer
     public function start(): void
     {
         $this->server->start();
+    }
+
+    private function prepareParticipants(int $connection, Server $server): Participants
+    {
+        $otherConnections = iterator_to_array($server->connections);
+        unset($otherConnections[array_search($connection, $otherConnections, true)]);
+
+        return new Participants($connection, $otherConnections);
     }
 }

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace OnceTwiceSold\Message\ServerToAll;
+namespace OnceTwiceSold\Message\ServerToBidder;
 
 use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\MessageTypeEnum;
 
 /**
  * {
- *  "type": "new_high_bid",
+ *  "type": "bid_too_low",
  *  "data": {
  *   "auction_id": "uuid",
- *   "amount": 140,
- *   "bidder_id": "user456"
+ *   "your_bid": 140
+ *   "starting_price": 150
  *  }
  * }
  */
-class NewHighBid extends AbstractMessage
+class BidTooLow extends AbstractMessage
 {
     public function __construct(array $data)
     {
         // TODO: validate $data for the right keys and values
-        parent::__construct(MessageTypeEnum::NEW_HIGH_BID, $data);
+        parent::__construct(MessageTypeEnum::BID_TOO_LOW, $data);
     }
 }
