@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace OnceTwiceSold;
 
+use Closure;
+use DateMalformedStringException;
 use Exception;
+use JsonException;
 use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\ErrorMessage;
 use OnceTwiceSold\Message\MessageFactory;
+use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
 use OnceTwiceSold\MessageHandler\MessageHandlerRegistry;
-use OnceTwiceSold\Persistence\AuctionsRepository;
-use OnceTwiceSold\WebSocketServer\Participants;
+use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\Persistence\ParticipantRepository;
+use OnceTwiceSold\WebSocketServer\Clients;
 use OpenSwoole\Http\Request;
+use OpenSwoole\Timer;
 use OpenSwoole\WebSocket\Frame;
 use OpenSwoole\WebSocket\Server;
 
@@ -22,9 +28,10 @@ class WebSocketServer
     public function __construct(
         private readonly string $listenHost,
         private readonly int $listenPort,
-        private AuctionsRepository $auctionsRepository,
-        private MessageFactory $messageFactory,
-        private MessageHandlerRegistry $messageHandlerRegistry,
+        private readonly AuctionRepository $auctionsRepository,
+        private readonly ParticipantRepository $participantRepository,
+        private readonly MessageFactory $messageFactory,
+        private readonly MessageHandlerRegistry $messageHandlerRegistry,
     ) {
         $this->server = new Server($this->listenHost, $this->listenPort);
         $this->server->on('Start', [$this, 'onStart']);
@@ -34,7 +41,8 @@ class WebSocketServer
         $this->server->on('Disconnect', [$this, 'onDisconnect']);
 
         // initialize memory tables before starting the server
-        $this->auctionsRepository->initializeTables();
+        $this->participantRepository->initializeTable();
+        $this->auctionsRepository->initializeTable();
     }
 
     public function onStart(Server $server): void
@@ -47,27 +55,20 @@ class WebSocketServer
         echo "Connection open: $request->fd".PHP_EOL;
     }
 
+    /**
+     * @throws JsonException
+     */
     public function onMessage(Server $server, Frame $frame): void
     {
         echo "Received message: $frame->data".PHP_EOL;
 
         $connection = $frame->fd;
         try {
+            // respond to client callback, usable from within the client message's handler
+            $pushCallback = $this->preparePushCallback($server);
             $message = $this->messageFactory->createFromData($frame->data);
             $handler = $this->messageHandlerRegistry->getHandler($message);
-            // respond to client callback, usable from within the client message's handler
-            $pushCallback = function (array $messages) use ($server): void {
-                /**
-                 * @var int $connection
-                 * @var AbstractMessage $message
-                 */
-                foreach ($messages as $connection => $message) {
-                    if ($server->isEstablished($connection)) {
-                        $server->push($connection, $message->toJson());
-                    }
-                }
-            };
-            $handler->handle($this->prepareParticipants($connection, $server), $message, $pushCallback);
+            $handler->handle($this->prepareClients($connection, $server), $message, $pushCallback);
         } catch (Exception $exception) {
             $message = ErrorMessage::createForException($exception);
             $server->push($connection, $message->toJson());
@@ -89,11 +90,64 @@ class WebSocketServer
         $this->server->start();
     }
 
-    private function prepareParticipants(int $connection, Server $server): Participants
+    private function prepareClients(int $connection, Server $server): Clients
     {
         $otherConnections = iterator_to_array($server->connections);
         unset($otherConnections[array_search($connection, $otherConnections, true)]);
 
-        return new Participants($connection, $otherConnections);
+        return new Clients($connection, $otherConnections);
+    }
+
+    /**
+     * The returned push callback receives an array of messages (concrete classes extending Message\AbstractMessage)
+     * indexed by the integer connection (client) identifier.
+     * The callback simply iterates these messages and pushes each message to the associated connection/client.
+     */
+    private function preparePushCallback(Server $server): Closure
+    {
+        return function (array $messages) use ($server): void {
+            foreach ($messages as $connection => $oneOrMoreMessages) {
+                // ensure array when only one message was sent to a connection
+                if (!is_array($oneOrMoreMessages)) {
+                    $oneOrMoreMessages = [$oneOrMoreMessages];
+                }
+                foreach ($oneOrMoreMessages as $message) {
+                    // handle case when pushing a certain message requires starting related timer
+                    $participants = $this->prepareClients($connection, $server);
+                    $this->setupTimers($message, $server, $participants);
+
+                    // push message to client if the connection is an established WebSocket connection
+                    if ($server->isEstablished($connection)) {
+                        $server->push($connection, $message->toJson());
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Some messages that the server pushes to acknowledge change of state need to start timers
+     * that would execute at a given point in the future. The logic executed when the timer expires is
+     * also a message handler, this time specialized in handling Server pushed messages.
+     *
+     * @throws DateMalformedStringException
+     */
+    private function setupTimers(
+        AbstractMessage $message,
+        Server $server,
+        Clients $participants,
+    ): void {
+        $pushCallback = $this->preparePushCallback($server);
+
+        // in case of a message pushed back to the seller acknowledging the auction start we start a timer
+        // that expires when the bidding is due to finish in order to handle the auction results
+        if ($message instanceof YouStartedAuction) {
+            $intervalMs = $message->getSecondsToEnd() * 1000;
+            $handler = $this->messageHandlerRegistry->getHandler($message);
+
+            Timer::after($intervalMs, static function () use ($handler, $participants, $message, $pushCallback) {
+                $handler->handle($participants, $message, $pushCallback);
+            });
+        }
     }
 }

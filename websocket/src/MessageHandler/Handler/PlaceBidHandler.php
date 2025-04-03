@@ -9,57 +9,70 @@ use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\BidderToServer\PlaceBid;
 use OnceTwiceSold\Message\MessageTypeEnum;
 use OnceTwiceSold\Message\ServerToAll\NewHighBid;
-use OnceTwiceSold\Message\ServerToBidder\BidTooLow;
+use OnceTwiceSold\Message\ServerToBidder\YouBidTooLow;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
-use OnceTwiceSold\Persistence\AuctionsRepository;
-use OnceTwiceSold\WebSocketServer\Participants;
+use OnceTwiceSold\Model\Auction;
+use OnceTwiceSold\Model\Participant;
+use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\Persistence\ParticipantRepository;
+use OnceTwiceSold\WebSocketServer\Clients;
 use RuntimeException;
 
 readonly class PlaceBidHandler implements MessageHandlerInterface
 {
     public function __construct(
-        private AuctionsRepository $auctionsRepository,
+        private AuctionRepository $auctionsRepository,
+        private ParticipantRepository $participantRepository,
     ) {
         //
     }
 
-    public function handle(Participants $participants, AbstractMessage $message, Closure $pushCallback): void
+    public function handle(Clients $clients, AbstractMessage $message, Closure $pushCallback): void
     {
         /** @var $message PlaceBid */
         // check that the auction referenced is valid
-        $auction = $this->auctionsRepository->loadAuction($message->getAuctionId());
+        $auction = $this->auctionsRepository->loadById($message->getAuctionId());
+
         if (null === $auction) {
             throw new RuntimeException('Auction not found');
         }
 
-        $bidder = $participants->getCurrentParticipant();
+        if ($auction->getState() === Auction::STATE_CLOSED) {
+            throw new RuntimeException('Auction is closed');
+        }
+
+        $bidderClientId = $clients->getCurrentClient();
 
         // check that bid amount is above the starting price
-        if ($auction->getStartingPrice() > $message->getAmount()) {
+        if ($auction->getStartingPrice() > $message->getBid()) {
             $pushCallback([
-                $bidder => new BidTooLow([
+                $bidderClientId => new YouBidTooLow([
                     'auction_id'     => $auction->getUuid(),
-                    'your_bid'       => $message->getAmount(),
+                    'your_bid'       => $message->getBid(),
                     'starting_price' => $auction->getStartingPrice(),
                 ]),
             ]);
+
             return;
         }
 
+        // persist bidder details
+        $bidder = new Participant($bidderClientId, $message->getBidderName(), $message->getBidderEmail());
+        $this->participantRepository->persist($bidder);
+
         // place the bid
-        $isHighest = $auction->placeBid($bidder, $message->getAmount());
-        $this->auctionsRepository->persistAuction($auction);
+        $isHighest = $auction->placeBid($bidderClientId, $message->getBid());
+        $this->auctionsRepository->persist($auction);
         if ($isHighest) {
             // push message to everyone when the highest bid was placed
             $pushMessages = [];
             $highestBidMessage = new NewHighBid([
                 'auction_id' => $auction->getUuid(),
-                'amount'     => $auction->getHighestBidderPrice(),
-                'bidder_id'  => $bidder,
+                'bid'        => $auction->getHighestBidderPrice(),
             ]);
 
-            foreach ($participants->getAllParticipants() as $participant) {
-                $pushMessages [$participant] = $highestBidMessage;
+            foreach ($clients->getAllClients() as $clientId) {
+                $pushMessages [$clientId] = $highestBidMessage;
             }
             $pushCallback($pushMessages);
         }

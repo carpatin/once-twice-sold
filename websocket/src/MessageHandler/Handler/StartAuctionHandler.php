@@ -9,17 +9,20 @@ use DateTime;
 use OnceTwiceSold\Message\AbstractMessage;
 use OnceTwiceSold\Message\MessageTypeEnum;
 use OnceTwiceSold\Message\SellerToServer\StartAuction;
-use OnceTwiceSold\Message\ServerToBidder\AuctionStarted;
+use OnceTwiceSold\Message\ServerToAll\AuctionStarted;
 use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
 use OnceTwiceSold\Model\Auction;
-use OnceTwiceSold\Persistence\AuctionsRepository;
-use OnceTwiceSold\WebSocketServer\Participants;
+use OnceTwiceSold\Model\Participant;
+use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\Persistence\ParticipantRepository;
+use OnceTwiceSold\WebSocketServer\Clients;
 
 readonly class StartAuctionHandler implements MessageHandlerInterface
 {
     public function __construct(
-        private AuctionsRepository $auctionsRepository,
+        private AuctionRepository $auctionsRepository,
+        private ParticipantRepository $participantRepository,
     ) {
         //
     }
@@ -27,16 +30,22 @@ readonly class StartAuctionHandler implements MessageHandlerInterface
     /**
      * @param StartAuction $message
      */
-    public function handle(Participants $participants, AbstractMessage $message, Closure $pushCallback): void
+    public function handle(Clients $clients, AbstractMessage $message, Closure $pushCallback): void
     {
-        $seller = $participants->getCurrentParticipant();
-        $auction = Auction::createNewFromMessage($seller, $message);
-        $this->auctionsRepository->persistAuction($auction);
+        $sellerClientId = $clients->getCurrentClient();
+
+        // persist seller details
+        $seller = new Participant($sellerClientId, $message->getSellerName(), $message->getSellerEmail());
+        $this->participantRepository->persist($seller);
+
+        // persist new auction
+        $auction = Auction::createNewFromMessage($sellerClientId, $message);
+        $this->auctionsRepository->persist($auction);
 
         $pushMessages = [
-            $seller => new YouStartedAuction([
+            $sellerClientId => new YouStartedAuction([
                 'auction_id'     => $auction->getUuid(),
-                'title'          => $auction->getTitle(),
+                'item'           => $auction->getItem(),
                 'starting_price' => $auction->getStartingPrice(),
                 'desired_price'  => $auction->getDesiredPrice(),
                 'started_at'     => (new DateTime())
@@ -46,10 +55,10 @@ readonly class StartAuctionHandler implements MessageHandlerInterface
             ]),
         ];
 
-        foreach ($participants->getOtherParticipants() as $connection) {
+        foreach ($clients->getOtherClients() as $connection) {
             $pushMessages[$connection] = new AuctionStarted([
                 'auction_id'     => $auction->getUuid(),
-                'title'          => $auction->getTitle(),
+                'item'           => $auction->getItem(),
                 'starting_price' => $auction->getStartingPrice(),
                 'started_at'     => (new DateTime())
                     ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),

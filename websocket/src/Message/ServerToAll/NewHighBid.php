@@ -12,16 +12,20 @@ use OnceTwiceSold\Message\MessageTypeEnum;
  *  "type": "new_high_bid",
  *  "data": {
  *   "auction_id": "uuid",
- *   "amount": 140,
- *   "bidder_id": "user456"
+ *   "bid": 140,
  *  }
  * }
  */
 class NewHighBid extends AbstractMessage
 {
+    private const array KEYS = [
+        'auction_id',
+        'bid',
+    ];
+
     public function __construct(array $data)
     {
-        // TODO: validate $data for the right keys and values
+        assert(empty(array_diff(self::KEYS, array_keys($data))), 'Missing message fields');
         parent::__construct(MessageTypeEnum::NEW_HIGH_BID, $data);
     }
 }

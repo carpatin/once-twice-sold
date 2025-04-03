@@ -2,7 +2,8 @@
 
 use OnceTwiceSold\Message\MessageFactory;
 use OnceTwiceSold\MessageHandler\MessageHandlerRegistry;
-use OnceTwiceSold\Persistence\AuctionsRepository;
+use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\Persistence\ParticipantRepository;
 use OnceTwiceSold\WebSocketServer;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
@@ -22,8 +23,8 @@ return static function (ContainerConfigurator $configurator) {
         ->arg('$handlers', tagged_iterator('app.message_handler'));
 
     $services->set(MessageFactory::class);
-
-    $services->set(AuctionsRepository::class);
+    $services->set(AuctionRepository::class);
+    $services->set(ParticipantRepository::class);
 
     $services
         ->set(WebSocketServer::class)

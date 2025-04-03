@@ -8,10 +8,18 @@ use OnceTwiceSold\Message\SellerToServer\StartAuction;
 
 class Auction
 {
+    public const string STATE_OPEN   = 'open';
+    public const string STATE_CLOSED = 'closed';
+
+    public const string VERDICT_SOLD   = 'sold';
+    public const string VERDICT_UNSOLD = 'unsold';
+
     public function __construct(
         private string $uuid,
+        private string $state, // open, closed
+        private string $verdict, // sold, unsold
         private int $sellerId,
-        private string $title,
+        private string $item,
         private string $description,
         private float $startingPrice,
         private float $desiredPrice,
@@ -19,7 +27,7 @@ class Auction
         private int $endsAt,
         private ?float $highestBidderPrice,
         private ?int $highestBidderId,
-
+        private ?string $allBiddersIds,
     ) {
         //
     }
@@ -31,15 +39,18 @@ class Auction
 
         return new Auction(
             uuid_create(),
+            self::STATE_OPEN,
+            self::VERDICT_UNSOLD,
             $seller,
-            $message->getTitle(),
+            $message->getItem(),
             $message->getDescription(),
             $message->getStartingPrice(),
             $message->getDesiredPrice(),
             $startedAtTimestamp,
             $endsAtTimestamp,
             null,
-            null
+            null,
+            null,
         );
     }
 
@@ -47,8 +58,10 @@ class Auction
     {
         return new Auction(
             $auctionId,
+            $auctionRow['state'],
+            $auctionRow['verdict'],
             $auctionRow['seller_id'],
-            $auctionRow['title'],
+            $auctionRow['item'],
             $auctionRow['description'],
             $auctionRow['starting_price'],
             $auctionRow['desired_price'],
@@ -56,6 +69,7 @@ class Auction
             $auctionRow['ends_at'],
             $auctionRow['highest_bidder_price'],
             $auctionRow['highest_bidder_id'],
+            $auctionRow['all_bidders_ids'],
         );
     }
 
@@ -63,8 +77,10 @@ class Auction
     {
         return [
             'uuid'                 => $this->uuid,
+            'state'                => $this->state,
+            'verdict'              => $this->verdict,
             'seller_id'            => $this->sellerId,
-            'title'                => $this->title,
+            'item'                 => $this->item,
             'description'          => $this->description,
             'starting_price'       => $this->startingPrice,
             'desired_price'        => $this->desiredPrice,
@@ -72,14 +88,21 @@ class Auction
             'ends_at'              => $this->endsAt,
             'highest_bidder_price' => $this->highestBidderPrice,
             'highest_bidder_id'    => $this->highestBidderId,
+            'all_bidders_ids'      => $this->allBiddersIds,
         ];
     }
 
-    public function placeBid(int $bidder, float $amount): bool
+    public function placeBid(int $bidderId, float $amount): bool
     {
+        // register bidder
+        $biddersIdsArray = $this->getAllBiddersIds();
+        $biddersIdsArray = array_unique([...$biddersIdsArray, $bidderId]);
+        $this->allBiddersIds = implode(',', $biddersIdsArray);
+
+        // check if current bid becomes highest
         if ($amount > $this->highestBidderPrice) {
             $this->highestBidderPrice = $amount;
-            $this->highestBidderId = $bidder;
+            $this->highestBidderId = $bidderId;
 
             return true;
         }
@@ -87,9 +110,48 @@ class Auction
         return false;
     }
 
+    public function getLoosingBiddersIds(): array
+    {
+        $biddersIdsArray = $this->getAllBiddersIds();
+        unset($biddersIdsArray[array_search($this->highestBidderId, $biddersIdsArray, true)]);
+
+        return $biddersIdsArray;
+    }
+
+
+    public function getAllBiddersIds(): array
+    {
+        $biddersIds = $this->allBiddersIds ?? '';
+        $biddersIdsArray = array_filter(explode(',', $biddersIds));
+
+        return array_map(static fn ($id) => (int)$id, $biddersIdsArray);
+    }
+
+    public function closeAuction(): void
+    {
+        $this->state = self::STATE_CLOSED;
+    }
+
+    public function obtainVerdict(): string
+    {
+        $this->verdict = ($this->highestBidderPrice >= $this->desiredPrice) ? self::VERDICT_SOLD : self::VERDICT_UNSOLD;
+
+        return $this->verdict;
+    }
+
     public function getUuid(): string
     {
         return $this->uuid;
+    }
+
+    public function getState(): string
+    {
+        return $this->state;
+    }
+
+    public function getVerdict(): string
+    {
+        return $this->verdict;
     }
 
     public function getSellerId(): int
@@ -97,19 +159,19 @@ class Auction
         return $this->sellerId;
     }
 
-    public function getTitle(): string
+    public function getItem(): string
     {
-        return $this->title;
-    }
-
-    public function getStartingPrice(): float
-    {
-        return $this->startingPrice;
+        return $this->item;
     }
 
     public function getDescription(): string
     {
         return $this->description;
+    }
+
+    public function getStartingPrice(): float
+    {
+        return $this->startingPrice;
     }
 
     public function getDesiredPrice(): float

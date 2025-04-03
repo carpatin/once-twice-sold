@@ -7,18 +7,21 @@ namespace OnceTwiceSold\Persistence;
 use OnceTwiceSold\Model\Auction;
 use OpenSwoole\Table;
 
-class AuctionsRepository
+class AuctionRepository
 {
     private Table $auctionsTable;
 
-    public function initializeTables(): void
+    public function initializeTable(): void
     {
         $this->auctionsTable = new Table(100);
+        $this->auctionsTable->column('state', Table::TYPE_STRING, 6);
+        $this->auctionsTable->column('verdict', Table::TYPE_STRING, 6);
         $this->auctionsTable->column('seller_id', Table::TYPE_INT);
+        $this->auctionsTable->column('all_bidders_ids', Table::TYPE_STRING, 300);
         $this->auctionsTable->column('highest_bidder_price', Table::TYPE_FLOAT);
         $this->auctionsTable->column('highest_bidder_id', Table::TYPE_INT);
-        $this->auctionsTable->column('title', Table::TYPE_STRING, 20);
-        $this->auctionsTable->column('description', Table::TYPE_STRING, 50);
+        $this->auctionsTable->column('item', Table::TYPE_STRING, 30);
+        $this->auctionsTable->column('description', Table::TYPE_STRING, 100);
         $this->auctionsTable->column('starting_price', Table::TYPE_FLOAT);
         $this->auctionsTable->column('desired_price', Table::TYPE_FLOAT);
         $this->auctionsTable->column('duration_seconds', Table::TYPE_INT);
@@ -28,20 +31,20 @@ class AuctionsRepository
         $this->auctionsTable->create();
     }
 
-    public function persistAuction(Auction $auction): void
+    public function persist(Auction $auction): void
     {
         $this->auctionsTable->set($auction->getUuid(), $auction->toTableRow());
     }
 
-    public function loadAuction(string $auctionId): ?Auction
+    public function loadById(string $id): ?Auction
     {
-        if (!$this->auctionsTable->exists($auctionId)) {
+        if (!$this->auctionsTable->exists($id)) {
             return null;
         }
 
-        $auctionRow = $this->auctionsTable->get($auctionId);
+        $auctionRow = $this->auctionsTable->get($id);
 
-        return Auction::createFromTableRow($auctionId, $auctionRow);
+        return Auction::createFromTableRow($id, $auctionRow);
     }
 
     public function loadAll(): array

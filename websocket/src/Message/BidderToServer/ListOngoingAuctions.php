@@ -17,7 +17,6 @@ class ListOngoingAuctions extends AbstractMessage
 {
     public function __construct(array $data)
     {
-        // TODO: validate $data for the right keys and values
         parent::__construct(MessageTypeEnum::LIST_ONGOING_AUCTIONS, $data);
     }
 }

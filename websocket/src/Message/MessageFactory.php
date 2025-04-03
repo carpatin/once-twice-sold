@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace OnceTwiceSold\Message;
 
 use JsonException;
-use OnceTwiceSold\Message\BidderToServer\PlaceBid;
 use OnceTwiceSold\Message\BidderToServer\ListOngoingAuctions;
+use OnceTwiceSold\Message\BidderToServer\PlaceBid;
 use OnceTwiceSold\Message\SellerToServer\StartAuction;
 use OnceTwiceSold\Message\ServerToAll\AuctionEnded;
+use OnceTwiceSold\Message\ServerToAll\AuctionStarted;
 use OnceTwiceSold\Message\ServerToAll\NewHighBid;
 use OnceTwiceSold\Message\ServerToBidder\OngoingAuctions;
-use OnceTwiceSold\Message\ServerToBidder\AuctionStarted;
 use OnceTwiceSold\Message\ServerToBidder\YouLostBid;
 use OnceTwiceSold\Message\ServerToBidder\YouWonItem;
 use OnceTwiceSold\Message\ServerToSeller\YouSoldItem;

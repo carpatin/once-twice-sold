@@ -12,18 +12,18 @@ use OnceTwiceSold\Message\MessageTypeEnum;
 use OnceTwiceSold\Message\ServerToBidder\OngoingAuctions;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
 use OnceTwiceSold\Model\Auction;
-use OnceTwiceSold\Persistence\AuctionsRepository;
-use OnceTwiceSold\WebSocketServer\Participants;
+use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\WebSocketServer\Clients;
 
 readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
 {
     public function __construct(
-        private AuctionsRepository $auctionsRepository,
+        private AuctionRepository $auctionsRepository,
     ) {
         //
     }
 
-    public function handle(Participants $participants, AbstractMessage $message, Closure $pushCallback): void
+    public function handle(Clients $clients, AbstractMessage $message, Closure $pushCallback): void
     {
         /** @var $message ListOngoingAuctions */
         $auctions = $this->auctionsRepository->loadAll();
@@ -31,9 +31,14 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
         $auctionsArray = [];
         /** @var Auction $auction */
         foreach ($auctions as $auction) {
+            // skip closed suctions
+            if ($auction->getState() === Auction::STATE_CLOSED) {
+                continue;
+            }
+
             $auctionsArray[] = [
                 'auction_id'     => $auction->getUuid(),
-                'title'          => $auction->getTitle(),
+                'item'           => $auction->getItem(),
                 'starting_price' => $auction->getStartingPrice(),
                 'started_at'     => (new DateTime())
                     ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),
@@ -49,7 +54,7 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
 
         // calling the push callback passing the message for the current participant only
         $pushCallback([
-            $participants->getCurrentParticipant() => $ongoingAuctionsMessage,
+            $clients->getCurrentClient() => $ongoingAuctionsMessage,
         ]);
     }
 

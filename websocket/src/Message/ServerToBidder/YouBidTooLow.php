@@ -9,29 +9,25 @@ use OnceTwiceSold\Message\MessageTypeEnum;
 
 /**
  * {
- *  "type": "ongoing_auctions",
+ *  "type": "you_bid_too_low",
  *  "data": {
- *  "auctions" : [
- *    {
- *      "auction_id": "uuid",
- *      "item": "Vintage Watch",
- *      "starting_price": 100,
- *      "started_at": "2025-04-01T09:30:00Z"
- *      "ends_at": "2025-04-01T10:30:00Z"
- *    }
- *   ]
+ *   "auction_id": "uuid",
+ *   "your_bid": 140
+ *   "starting_price": 150
  *  }
  * }
  */
-class OngoingAuctions extends AbstractMessage
+class YouBidTooLow extends AbstractMessage
 {
     private const array KEYS = [
-        'auctions',
+        'auction_id',
+        'your_bid',
+        'starting_price',
     ];
 
     public function __construct(array $data)
     {
         assert(empty(array_diff(self::KEYS, array_keys($data))), 'Missing message fields');
-        parent::__construct(MessageTypeEnum::ONGOING_AUCTIONS, $data);
+        parent::__construct(MessageTypeEnum::YOU_BID_TOO_LOW, $data);
     }
 }

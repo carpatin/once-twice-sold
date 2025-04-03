@@ -9,19 +9,25 @@ use OnceTwiceSold\Message\MessageTypeEnum;
 
 /**
  * {
- * "type": "you_lost_bid",
- * "data": {
- * "item_id": "abc123",
- * "final_price": 260,
- * "winner_id": "user789"
- * }
+ *  "type": "you_lost_bid",
+ *  "data": {
+ *      "auction_id": "uuid",
+ *      "item": "Vintage Watch",
+ *      "final_price": 260
+ *  }
  * }
  */
 class YouLostBid extends AbstractMessage
 {
+    private const array KEYS = [
+        'auction_id',
+        'item',
+        'final_price',
+    ];
+
     public function __construct(array $data)
     {
-        // TODO: validate $data for the right keys and values
+        assert(empty(array_diff(self::KEYS, array_keys($data))), 'Missing message fields');
         parent::__construct(MessageTypeEnum::YOU_LOST_BID, $data);
     }
 }
