@@ -59,6 +59,7 @@ readonly class StartAuctionHandler implements MessageHandlerInterface
             $pushMessages[$connection] = new AuctionStarted([
                 'auction_id'     => $auction->getUuid(),
                 'item'           => $auction->getItem(),
+                'description'    => $auction->getDescription(),
                 'starting_price' => $auction->getStartingPrice(),
                 'started_at'     => (new DateTime())
                     ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),

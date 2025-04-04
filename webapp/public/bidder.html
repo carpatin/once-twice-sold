@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Once.. Twice.. Sold! - Bidder</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .section {
+            width: 50%; /* Limits the width to 50% of the viewport */
+            margin: 20px auto; /* Centers the section horizontally with 20px margin on top and bottom */
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #444;
+            border-radius: 3px;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        .response-card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        #auctionList {
+            margin-top: 10px;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #responseContainer {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<h1 style="text-align:center;">Once.. Twice.. Sold!</h1>
+<h2 style="text-align:center;">Bidder</h2>
+<div class="section">
+    <h2>Bidder Info & Auction List</h2>
+    <label>Bidder Name:
+        <input type="text" id="bidderName">
+    </label>
+    <label>Bidder Email:
+        <input type="email" id="bidderEmail">
+    </label>
+    <button id="listAuctionsBtn">List Ongoing Auctions</button>
+    <div id="auctionList"></div>
+</div>
+<div class="section">
+    <h2>Place Bid</h2>
+    <label>Select Auction:
+        <select id="auctionSelect">
+            <option value="">Select an auction</option>
+        </select>
+    </label>
+    <label>Bid Amount:
+        <input type="number" id="bidAmount">
+    </label>
+    <button id="placeBidBtn">Place Bid</button>
+</div>
+<div class="section">
+    <h2>Incoming Messages</h2>
+    <div id="incomingContainer"></div>
+</div>
+<div class="section">
+    <h2>Outgoing Messages</h2>
+    <div id="outgoingContainer"></div>
+</div>
+<div class="section">
+    <h2>Server Communication</h2>
+    <div id="consoleContainer"></div>
+</div>
+<script>
+    // Adjust the WebSocket URL to match your backend
+    const wsUrl = "ws://localhost:9502";
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = function () {
+        addConsoleMessage("Connected to WebSocket server.");
+    };
+
+    ws.onmessage = function (event) {
+        try {
+            const msg = JSON.parse(event.data);
+            handleMessage(msg);
+        } catch (e) {
+            addConsoleMessage("Error parsing message: " + e);
+        }
+    };
+
+    ws.onerror = function (error) {
+        addConsoleMessage("WebSocket error: " + error);
+    };
+
+    ws.onclose = function () {
+        addConsoleMessage("WebSocket connection closed.");
+    };
+
+
+    function addIncomingMessage(text) {
+        const container = document.getElementById("incomingContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addOutgoingMessage(text) {
+        const container = document.getElementById("outgoingContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addConsoleMessage(text) {
+        const container = document.getElementById("consoleContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Update the auction list display area (for additional context)
+    function updateAuctionListDisplay(auctions) {
+        const listDiv = document.getElementById("auctionList");
+        listDiv.innerHTML = "";
+        if (auctions && auctions.length > 0) {
+            auctions.forEach(auction => {
+                const div = document.createElement("div");
+                div.className = "response-card";
+                div.textContent = "ID: " + auction.auction_id + ", Item: " + auction.item + ", Starting Price: " + auction.starting_price;
+                listDiv.appendChild(div);
+            });
+        } else {
+            listDiv.textContent = "No ongoing auctions.";
+        }
+    }
+
+    // Repopulate the auction select element with a complete list
+    function updateAuctionSelect(auctions) {
+        const select = document.getElementById("auctionSelect");
+        select.innerHTML = '<option value="">Select an auction</option>';
+        auctions.forEach(auction => {
+            const option = document.createElement("option");
+            option.value = auction.auction_id;
+            option.textContent = "ID: " + auction.auction_id + ", " + auction.item;
+            select.appendChild(option);
+        });
+    }
+
+    // Add a new auction option if not already present
+    function addAuctionToSelect(auction) {
+        const select = document.getElementById("auctionSelect");
+        // Check if the auction already exists in the select list
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === auction.auction_id) {
+                return; // already exists
+            }
+        }
+        const option = document.createElement("option");
+        option.value = auction.auction_id;
+        option.textContent = "ID: " + auction.auction_id + ", " + auction.item;
+        select.appendChild(option);
+    }
+
+    function removeAuctionFromSelect(auctionId) {
+        const select = document.getElementById("auctionSelect");
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === auctionId) {
+                select.remove(i);
+                break;
+            }
+        }
+    }
+
+    function handleMessage(msg) {
+        switch (msg.type) {
+            case "ongoing_auctions":
+                updateAuctionSelect(msg.data.auctions);
+                updateAuctionListDisplay(msg.data.auctions);
+                addIncomingMessage("Updated auction list.");
+                break;
+            case "auction_started":
+                // Add the new auction to the select if it's not already there.
+                addAuctionToSelect(msg.data);
+                addIncomingMessage("New auction started. Item: " + msg.data.item + ". Description: "
+                    + msg.data.description + ". Starting price: "+msg.data.starting_price +" (auction ID: "
+                    + msg.data.auction_id + ")");
+                break;
+            case "you_bid_too_low":
+                addIncomingMessage("Bid too low for item: " + msg.data.item + " (auction ID: "
+                    + msg.data.auction_id + "). Your bid: " + msg.data.your_bid + ". Starting Price: "
+                    + msg.data.starting_price);
+                break;
+            case "new_high_bid":
+                addIncomingMessage("New high bid for item: " + msg.data.item + " (auction ID: "
+                    + msg.data.auction_id + "). Highest bid: " + msg.data.bid);
+                break;
+            case "you_won_item":
+                addIncomingMessage("Congratulations! You won the item: " + msg.data.item + ". Final price: "
+                    + msg.data.final_price + ". Seller: " + msg.data.seller_name + " ( " + msg.data.seller_email + " )");
+                alert(
+                    "You won item!\n" +
+                    "Item: " + msg.data.item + "\n" +
+                    "Final Price: " + msg.data.final_price + "\n" +
+                    "Seller Name: " + msg.data.seller_name + "\n" +
+                    "Seller Email: " + msg.data.seller_email
+                );
+                break;
+            case "you_lost_bid":
+                addIncomingMessage("Sorry! You lost the bid for item: " + msg.data.item + ". Final price: "
+                    + msg.data.final_price);
+                alert(
+                    "You lost bid!\n" +
+                    "Item: " + msg.data.item + "\n" +
+                    "Final Price: " + msg.data.final_price
+                );
+                break;
+            case "auction_ended":
+                addIncomingMessage("Auction ended for item: " + msg.data.item + " (auction ID: " + msg.data.auction_id
+                    + "). Verdict: " + msg.data.verdict);
+                removeAuctionFromSelect(msg.data.auction_id);
+                break;
+            default:
+                addIncomingMessage("Received: " + JSON.stringify(msg));
+        }
+    }
+
+    document.getElementById("listAuctionsBtn").addEventListener("click", function () {
+        const message = {
+            type: "list_ongoing_auctions",
+            data: {}
+        };
+        ws.send(JSON.stringify(message));
+        addOutgoingMessage("Requested list of ongoing auctions.");
+    });
+
+    document.getElementById("placeBidBtn").addEventListener("click", function () {
+        const select = document.getElementById("auctionSelect");
+        const auctionId = select.value;
+        if (!auctionId) {
+            alert("Please select an auction from the list.");
+            return;
+        }
+        const bidderName = document.getElementById("bidderName").value;
+        const bidderEmail = document.getElementById("bidderEmail").value;
+        const bidAmount = parseFloat(document.getElementById("bidAmount").value);
+        const message = {
+            type: "place_bid",
+            data: {
+                auction_id: auctionId,
+                bidder_name: bidderName,
+                bidder_email: bidderEmail,
+                bid: bidAmount
+            }
+        };
+        ws.send(JSON.stringify(message));
+        addOutgoingMessage("Sent place_bid message for auction " + auctionId);
+    });
+</script>
+</body>
+</html>

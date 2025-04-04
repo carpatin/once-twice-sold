@@ -19,45 +19,45 @@ services:
         published: 9502
         protocol: tcp
 
-#  webapp:
-#    build:
-#      context: .
-#      target: webapp
-#      dockerfile: ./docker/Dockerfile
-#      args:
-#        UID: ${HOST_UID:-1000}
-#        GID: ${HOST_GID:-1000}
-#    image: once-twice-sold/webapp
-#    networks:
-#      - network
-#    restart: unless-stopped
-#    volumes:
-#      - php_socket:/var/run/php
-#      - ./webapp:/srv/app
-#
-#  caddy:
-#    build:
-#      context: .
-#      target: caddy
-#      dockerfile: ./docker/Dockerfile
-#      args:
-#        UID: ${HOST_UID:-1000}
-#        GID: ${HOST_GID:-1000}
-#    image: once-twice-sold/caddy:2
-#    depends_on:
-#      - webapp
-#    environment:
-#      SERVER_NAME: localhost, caddy:80
-#    networks:
-#      - network
-#    restart: unless-stopped
-#    volumes:
-#      - php_socket:/var/run/php
-#      - ./webapp/public:/srv/app/public
-#    ports:
-#      - target: 80
-#        published: 80
-#        protocol: tcp
+  webapp:
+    build:
+      context: .
+      target: webapp
+      dockerfile: ./docker/Dockerfile
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    image: once-twice-sold/webapp
+    networks:
+      - network
+    restart: unless-stopped
+    volumes:
+      - php_socket:/var/run/php
+      - ./webapp:/srv/app
+
+  caddy:
+    build:
+      context: .
+      target: caddy
+      dockerfile: ./docker/Dockerfile
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    image: once-twice-sold/caddy:2
+    depends_on:
+      - webapp
+    environment:
+      SERVER_NAME: localhost, caddy:80
+    networks:
+      - network
+    restart: unless-stopped
+    volumes:
+      - php_socket:/var/run/php
+      - ./webapp/public:/srv/app/public
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
 
 networks:
   network:

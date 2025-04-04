@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Once.. Twice.. Sold! - Seller</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .section {
+            width: 50%; /* Limits the width to 50% of the viewport */
+            margin: 20px auto; /* Centers the section horizontally with 20px margin on top and bottom */
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #444;
+            border-radius: 3px;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        .response-card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        #responseContainer {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<h1 style="text-align:center;">Once.. Twice.. Sold!</h1>
+<h2 style="text-align:center;">Seller</h2>
+<div class="section">
+    <h2>Start New Auction</h2>
+    <label>Seller Name:
+        <input type="text" id="sellerName">
+    </label>
+    <label>Seller Email:
+        <input type="email" id="sellerEmail">
+    </label>
+    <label>Item:
+        <input type="text" id="item">
+    </label>
+    <label>Description:
+        <textarea id="description"></textarea>
+    </label>
+    <label>Starting Price:
+        <input type="number" id="startingPrice">
+    </label>
+    <label>Desired Price:
+        <input type="number" id="desiredPrice">
+    </label>
+    <label>Duration (seconds):
+        <input type="number" id="durationSeconds">
+    </label>
+    <button id="startAuctionBtn">Start Auction</button>
+</div>
+<div class="section">
+    <h2>Incoming Messages</h2>
+    <div id="incomingContainer"></div>
+</div>
+<div class="section">
+    <h2>Outgoing Messages</h2>
+    <div id="outgoingContainer"></div>
+</div>
+<div class="section">
+    <h2>Server Communication</h2>
+    <div id="consoleContainer"></div>
+</div>
+
+<script>
+    // Change the WebSocket URL to match your backend
+    const wsUrl = "ws://localhost:9502";
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = function () {
+        addConsoleMessage("Connected to WebSocket server.");
+    };
+
+    ws.onmessage = function (event) {
+        try {
+            const msg = JSON.parse(event.data);
+            handleMessage(msg);
+        } catch (error) {
+            addConsoleMessage("Error parsing message: " + error);
+        }
+    };
+
+    ws.onerror = function (error) {
+        addConsoleMessage("WebSocket error: " + error);
+    };
+
+    ws.onclose = function () {
+        addConsoleMessage("WebSocket connection closed.");
+    };
+
+    function addIncomingMessage(text) {
+        const container = document.getElementById("incomingContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addOutgoingMessage(text) {
+        const container = document.getElementById("outgoingContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addConsoleMessage(text) {
+        const container = document.getElementById("consoleContainer");
+        const div = document.createElement("div");
+        div.className = "response-card";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function handleMessage(msg) {
+        switch (msg.type) {
+            case "you_started_auction":
+                addIncomingMessage("Auction started successfully. Item: " + msg.data.item + ". Auction ID: "
+                    + msg.data.auction_id);
+                break;
+            case "you_sold_item":
+                addIncomingMessage("You sold the item: " + msg.data.item + ". Sold for " + msg.data.final_price + " to "
+                    + msg.data.buyer_name + " ( " + msg.data.buyer_email + " )");
+                alert(
+                    "Item sold!\n" +
+                    "Final Price: " + msg.data.final_price + "\n" +
+                    "Buyer Name: " + msg.data.buyer_name + "\n" +
+                    "Buyer Email: " + msg.data.buyer_email
+                );
+                break;
+            case "you_did_not_sell_item":
+                addIncomingMessage("You didn't sell the item: " + msg.data.item + ". Final price: "
+                    + msg.data.final_price + ". Desired price:" + msg.data.desired_price);
+                alert(
+                    "Item not sold!\n" +
+                    "Final Price: " + msg.data.final_price + "\n" +
+                    "Desired Price: " + msg.data.desired_price
+                );
+                break;
+            case "new_high_bid":
+                addIncomingMessage("New high bid for item: " + msg.data.item + " (auction ID: "
+                    + msg.data.auction_id + "). Highest bid: " + msg.data.bid);
+                break;
+            case "auction_ended":
+                addIncomingMessage("Auction ended for item: " + msg.data.item + " (auction ID: " + msg.data.auction_id
+                    + "). Verdict: " + msg.data.verdict);
+                break;
+            default:
+                addIncomingMessage("Received: " + JSON.stringify(msg));
+        }
+    }
+
+    document.getElementById("startAuctionBtn").addEventListener("click", function () {
+        const sellerName = document.getElementById("sellerName").value;
+        const sellerEmail = document.getElementById("sellerEmail").value;
+        const item = document.getElementById("item").value;
+        const description = document.getElementById("description").value;
+        const startingPrice = parseFloat(document.getElementById("startingPrice").value);
+        const desiredPrice = parseFloat(document.getElementById("desiredPrice").value);
+        const durationSeconds = parseInt(document.getElementById("durationSeconds").value);
+
+        const message = {
+            type: "start_auction",
+            data: {
+                seller_name: sellerName,
+                seller_email: sellerEmail,
+                item: item,
+                description: description,
+                starting_price: startingPrice,
+                desired_price: desiredPrice,
+                duration_seconds: durationSeconds
+            }
+        };
+        ws.send(JSON.stringify(message));
+        addOutgoingMessage("Sent message to start new auction");
+    });
+</script>
+</body>
+</html>

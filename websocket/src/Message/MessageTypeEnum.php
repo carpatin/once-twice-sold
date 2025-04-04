@@ -21,6 +21,7 @@ enum MessageTypeEnum: string
      */
     case YOU_STARTED_AUCTION = 'you_started_auction';
     case YOU_SOLD_ITEM = 'you_sold_item';
+    case YOU_DID_NOT_SELL_ITEM = 'you_did_not_sell_item';
 
     /**
      * Bidder -> Server

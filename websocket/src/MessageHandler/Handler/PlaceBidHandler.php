@@ -68,6 +68,7 @@ readonly class PlaceBidHandler implements MessageHandlerInterface
             $pushMessages = [];
             $highestBidMessage = new NewHighBid([
                 'auction_id' => $auction->getUuid(),
+                'item'       => $auction->getItem(),
                 'bid'        => $auction->getHighestBidderPrice(),
             ]);
 

@@ -10,6 +10,7 @@ use OnceTwiceSold\Message\MessageTypeEnum;
 use OnceTwiceSold\Message\ServerToAll\AuctionEnded;
 use OnceTwiceSold\Message\ServerToBidder\YouLostBid;
 use OnceTwiceSold\Message\ServerToBidder\YouWonItem;
+use OnceTwiceSold\Message\ServerToSeller\YouDidNotSellItem;
 use OnceTwiceSold\Message\ServerToSeller\YouSoldItem;
 use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
@@ -49,8 +50,8 @@ readonly class AuctionTimeExpiredHandler implements MessageHandlerInterface
         $participants = [$auction->getSellerId(), ...$auction->getAllBiddersIds()];
         // send auction_ended message to everyone
         foreach ($clients->getAllClients() as $client) {
-            // when the item is sold, we skip the auction participants from the general announcement
-            if ($verdict === Auction::VERDICT_SOLD && in_array($client, $participants, true)) {
+            // skip the auction participants from the general announcement
+            if (in_array($client, $participants, true)) {
                 continue;
             }
 
@@ -58,8 +59,23 @@ readonly class AuctionTimeExpiredHandler implements MessageHandlerInterface
                 'auction_id'  => $auction->getUuid(),
                 'item'        => $auction->getItem(),
                 'verdict'     => $verdict,
-                'final_price' => ($verdict === Auction::VERDICT_SOLD) ? $auction->getHighestBidderPrice() : null,
+                'final_price' => $auction->getHighestBidderPrice(),
             ]);
+        }
+
+        if ($verdict === Auction::VERDICT_UNSOLD) {
+            // send you_did_not_sell_item message to the seller if item
+            $this->addYouDidNotSellItemMessage($auction, $pushMessages);
+
+            // send all the participating bidders message about auction ended
+            foreach ($auction->getAllBiddersIds() as $bidderClientId) {
+                $pushMessages[$bidderClientId][] = new AuctionEnded([
+                    'auction_id'  => $auction->getUuid(),
+                    'item'        => $auction->getItem(),
+                    'verdict'     => $verdict,
+                    'final_price' => $auction->getHighestBidderPrice(),
+                ]);
+            }
         }
 
         if ($verdict === Auction::VERDICT_SOLD) {
@@ -120,6 +136,17 @@ readonly class AuctionTimeExpiredHandler implements MessageHandlerInterface
             'buyer_email' => $buyer->getEmail(),
         ]);
         $pushMessages[$auction->getSellerId()][] = $youSoldItem;
+    }
+
+    private function addYouDidNotSellItemMessage(Auction $auction, array &$pushMessages): void
+    {
+        $youDidNotSellItem = new YouDidNotSellItem([
+            'auction_id'    => $auction->getUuid(),
+            'item'          => $auction->getItem(),
+            'final_price'   => $auction->getHighestBidderPrice(),
+            'desired_price' => $auction->getDesiredPrice(),
+        ]);
+        $pushMessages[$auction->getSellerId()][] = $youDidNotSellItem;
     }
 
     public function getHandledMessageType(): MessageTypeEnum
