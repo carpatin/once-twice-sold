@@ -35,14 +35,4 @@ class ParticipantRepository
 
         return Participant::createFromTableRow($participantId, $row);
     }
-
-    public function loadAll(): array
-    {
-        $participants = [];
-        foreach ($this->table as $id => $row) {
-            $participants[] = Participant::createFromTableRow((int)$id, $row);
-        }
-
-        return $participants;
-    }
 }

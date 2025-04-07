@@ -13,12 +13,14 @@ use OnceTwiceSold\Message\ServerToBidder\OngoingAuctions;
 use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
 use OnceTwiceSold\Model\Auction;
 use OnceTwiceSold\Persistence\AuctionRepository;
+use OnceTwiceSold\Persistence\PhotoRepository;
 use OnceTwiceSold\WebSocketServer\Clients;
 
 readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
 {
     public function __construct(
-        private AuctionRepository $auctionsRepository,
+        private AuctionRepository $auctionRepository,
+        private PhotoRepository $photoRepository,
     ) {
         //
     }
@@ -26,7 +28,7 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
     public function handle(Clients $clients, AbstractMessage $message, Closure $pushCallback): void
     {
         /** @var $message ListOngoingAuctions */
-        $auctions = $this->auctionsRepository->loadAll();
+        $auctions = $this->auctionRepository->loadAll();
 
         $auctionsArray = [];
         /** @var Auction $auction */
@@ -36,6 +38,9 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
                 continue;
             }
 
+            $photos = $this->photoRepository->loadByAuctionId($auction->getUuid());
+            $photosArray = $photos?->getPhotos() ?? [];
+
             $auctionsArray[] = [
                 'auction_id'     => $auction->getUuid(),
                 'item'           => $auction->getItem(),
@@ -44,6 +49,7 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
                     ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),
                 'ends_at'        => (new DateTime())
                     ->setTimestamp($auction->getEndsAt())->format(DateTime::ATOM),
+                'photos'         => $photosArray,
             ];
         }
 

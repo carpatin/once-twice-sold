@@ -15,6 +15,7 @@ use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
 use OnceTwiceSold\MessageHandler\MessageHandlerRegistry;
 use OnceTwiceSold\Persistence\AuctionRepository;
 use OnceTwiceSold\Persistence\ParticipantRepository;
+use OnceTwiceSold\Persistence\PhotoRepository;
 use OnceTwiceSold\WebSocketServer\Clients;
 use OpenSwoole\Http\Request;
 use OpenSwoole\Timer;
@@ -30,6 +31,7 @@ class WebSocketServer
         private readonly int $listenPort,
         private readonly AuctionRepository $auctionsRepository,
         private readonly ParticipantRepository $participantRepository,
+        private readonly PhotoRepository $photosRepository,
         private readonly MessageFactory $messageFactory,
         private readonly MessageHandlerRegistry $messageHandlerRegistry,
     ) {
@@ -40,9 +42,18 @@ class WebSocketServer
         $this->server->on('Close', [$this, 'onClose']);
         $this->server->on('Disconnect', [$this, 'onDisconnect']);
 
+        // Settings for having photo uploads
+        $this->server->set([
+            // Increase maximum package size
+            'package_max_length' => 20 * 1024 * 1024, // 20 MB
+            // Increase output buffer
+            'buffer_output_size' => 20 * 1024 * 1024,
+        ]);
+
         // initialize memory tables before starting the server
-        $this->participantRepository->initializeTable();
         $this->auctionsRepository->initializeTable();
+        $this->participantRepository->initializeTable();
+        $this->photosRepository->initializeTable();
     }
 
     public function onStart(Server $server): void
@@ -60,7 +71,7 @@ class WebSocketServer
      */
     public function onMessage(Server $server, Frame $frame): void
     {
-        echo "Received message: $frame->data".PHP_EOL;
+        echo "Received message: ".substr($frame->data, 0, 200).PHP_EOL;
 
         $connection = $frame->fd;
         try {

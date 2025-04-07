@@ -15,6 +15,7 @@ enum MessageTypeEnum: string
      * Seller -> Server
      */
     case START_AUCTION = 'start_auction';
+    case ADD_ITEM_PHOTO = 'add_item_photo';
 
     /**
      * Server -> Seller
@@ -41,6 +42,7 @@ enum MessageTypeEnum: string
      * Server -> * (broadcasts)
      */
     case AUCTION_STARTED = 'auction_started';
+    case ITEM_PHOTO_ADDED = 'item_photo_added';
     case NEW_HIGH_BID = 'new_high_bid';
     case AUCTION_ENDED = 'auction_ended';
 }

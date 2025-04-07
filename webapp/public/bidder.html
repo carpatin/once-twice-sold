@@ -3,108 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <title>Once.. Twice.. Sold! - Bidder</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        .section {
-            width: 50%; /* Limits the width to 50% of the viewport */
-            margin: 20px auto; /* Centers the section horizontally with 20px margin on top and bottom */
-            border: 1px solid #333;
-            padding: 20px;
-            border-radius: 5px;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #444;
-            border-radius: 3px;
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-        }
-
-        button {
-            padding: 10px 15px;
-            background-color: #333;
-            color: #e0e0e0;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
+        .inline-photos {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
             margin-top: 10px;
         }
 
-        button:hover {
-            background-color: #555;
+        .inline-photos img {
+            width: 32%;
+            border-radius: 4px;
+            object-fit: cover;
         }
 
-        .response-card {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-            word-wrap: break-word;
-        }
-
-        #auctionList {
-            margin-top: 10px;
-            background-color: #1e1e1e;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 5px;
+        #incomingContainer, #outgoingContainer, #consoleContainer {
             max-height: 200px;
-            overflow-y: auto;
-        }
-
-        #responseContainer {
-            max-height: 300px;
             overflow-y: auto;
         }
     </style>
 </head>
-<body>
-<h1 style="text-align:center;">Once.. Twice.. Sold!</h1>
-<h2 style="text-align:center;">Bidder</h2>
-<div class="section">
-    <h2>Bidder Info & Auction List</h2>
-    <label>Bidder Name:
-        <input type="text" id="bidderName">
-    </label>
-    <label>Bidder Email:
-        <input type="email" id="bidderEmail">
-    </label>
-    <button id="listAuctionsBtn">List Ongoing Auctions</button>
-    <div id="auctionList"></div>
-</div>
-<div class="section">
-    <h2>Place Bid</h2>
-    <label>Select Auction:
-        <select id="auctionSelect">
-            <option value="">Select an auction</option>
-        </select>
-    </label>
-    <label>Bid Amount:
-        <input type="number" id="bidAmount">
-    </label>
-    <button id="placeBidBtn">Place Bid</button>
-</div>
-<div class="section">
-    <h2>Incoming Messages</h2>
-    <div id="incomingContainer"></div>
-</div>
-<div class="section">
-    <h2>Outgoing Messages</h2>
-    <div id="outgoingContainer"></div>
-</div>
-<div class="section">
-    <h2>Server Communication</h2>
-    <div id="consoleContainer"></div>
+<body class="bg-dark text-light">
+<div class="container my-4">
+    <h1 class="text-center mb-4">Once.. Twice.. Sold!</h1>
+    <h2 class="text-center mb-4">Bidder</h2>
+
+    <!-- Bidder Info -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Bidder Information</h2>
+            <div class="form-group">
+                <label for="bidderName">Bidder Name:</label>
+                <input type="text" id="bidderName" class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="form-group">
+                <label for="bidderEmail">Bidder Email:</label>
+                <input type="email" id="bidderEmail" class="form-control bg-dark text-light border-secondary">
+            </div>
+        </div>
+    </div>
+
+    <!-- Auctions -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Auctions</h2>
+            <button id="listAuctionsBtn" class="btn btn-primary">Refresh auctions</button>
+            <!-- Auction cards will be appended here as list items -->
+            <ul id="currentAuctions" class="list-unstyled d-flex flex-wrap gap-3 mb-0 mt-3">
+            </ul>
+        </div>
+    </div>
+
+    <!-- Incoming Messages -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Incoming Messages</h2>
+            <div id="incomingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
+
+    <!-- Outgoing Messages -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Outgoing Messages</h2>
+            <div id="outgoingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
+
+    <!-- Server Communication -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Server Communication</h2>
+            <div id="consoleContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
 </div>
 <script>
     // Adjust the WebSocket URL to match your backend
@@ -132,11 +106,9 @@
         addConsoleMessage("WebSocket connection closed.");
     };
 
-
     function addIncomingMessage(text) {
         const container = document.getElementById("incomingContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
@@ -145,7 +117,6 @@
     function addOutgoingMessage(text) {
         const container = document.getElementById("outgoingContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
@@ -154,78 +125,157 @@
     function addConsoleMessage(text) {
         const container = document.getElementById("consoleContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
 
-    // Update the auction list display area (for additional context)
-    function updateAuctionListDisplay(auctions) {
-        const listDiv = document.getElementById("auctionList");
-        listDiv.innerHTML = "";
-        if (auctions && auctions.length > 0) {
-            auctions.forEach(auction => {
-                const div = document.createElement("div");
-                div.className = "response-card";
-                div.textContent = "ID: " + auction.auction_id + ", Item: " + auction.item + ", Starting Price: " + auction.starting_price;
-                listDiv.appendChild(div);
-            });
-        } else {
-            listDiv.textContent = "No ongoing auctions.";
-        }
-    }
-
-    // Repopulate the auction select element with a complete list
-    function updateAuctionSelect(auctions) {
-        const select = document.getElementById("auctionSelect");
-        select.innerHTML = '<option value="">Select an auction</option>';
+    function refreshAuctionCards(auctions) {
         auctions.forEach(auction => {
-            const option = document.createElement("option");
-            option.value = auction.auction_id;
-            option.textContent = "ID: " + auction.auction_id + ", " + auction.item;
-            select.appendChild(option);
+            const auctionCard = document.getElementById("auctionCard_" + auction.auction_id);
+            if (null === auctionCard) {
+                addAuctionCard(auction.auction_id, auction.item, auction.description, auction.starting_price, auction.ends_at);
+                auction.photos.forEach(photo => {
+                    addAuctionPhotoToCard(auction.auction_id, photo);
+                });
+            }
         });
     }
 
-    // Add a new auction option if not already present
-    function addAuctionToSelect(auction) {
-        const select = document.getElementById("auctionSelect");
-        // Check if the auction already exists in the select list
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === auction.auction_id) {
-                return; // already exists
-            }
+    function addAuctionCard(auctionId, item, description, startingPrice, endsAt, isBefore = false) {
+        const auctionsContainer = document.getElementById("currentAuctions");
+        const auctionItem = document.createElement("li");
+        auctionItem.id = "auctionCard_" + auctionId;
+        auctionItem.classList.add("mb-3");
+        const endsAtDate = new Date(endsAt);
+        const endsAtFormatted =
+            endsAtDate.toLocaleString('en-US', {
+                weekday: 'long', // Day of the week
+                year: 'numeric',
+                month: 'long', // Full month name
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            });
+
+        auctionItem.innerHTML = `
+            <div class="card bg-dark text-light">
+              <div class="card-body">
+                <h4 class="card-title"><strong>${item}</strong> (${auctionId})</h4>
+                <p class="card-text">${description}</p>
+                <p class="card-text"><strong>Starting Price:</strong> ${startingPrice}</p>
+                <p class="card-text"><strong>Ends At:</strong> ${endsAtFormatted}</p>
+                <div class="inline-photos" id="auction_${auctionId}_photos"></div>
+                <div class="card-text">
+                  <div class="row justify-content-end">
+                    <div class="col-md-4">
+                        <div class="input-group mb-3">
+                          <input id="bidAmount_${auctionId}"type="number" class="form-control bg-dark text-light" placeholder="Enter your bid">
+                          <div class="input-group-append">
+                            <button onclick="placeBid('${auctionId}')" class="btn btn-primary" type="button">Place Bid</button>
+                          </div>
+                        </div>
+                    </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+        if (isBefore) {
+            auctionsContainer.insertBefore(auctionItem, auctionsContainer.firstChild);
+        } else {
+            auctionsContainer.appendChild(auctionItem);
         }
-        const option = document.createElement("option");
-        option.value = auction.auction_id;
-        option.textContent = "ID: " + auction.auction_id + ", " + auction.item;
-        select.appendChild(option);
     }
 
-    function removeAuctionFromSelect(auctionId) {
-        const select = document.getElementById("auctionSelect");
-        for (let i = 0; i < select.options.length; i++) {
-            if (select.options[i].value === auctionId) {
-                select.remove(i);
-                break;
-            }
+    function addAuctionPhotoToCard(auctionId, base64Photo) {
+        // Find the inline photos container for the given auction
+        const container = document.getElementById("auction_" + auctionId + "_photos");
+        if (!container) {
+            console.error("Inline photos container not found for auction ID:", auctionId);
+            return;
+        }
+
+        // Create the image element with basic styling
+        const img = document.createElement("img");
+        img.src = base64Photo;
+        img.alt = "Item photo";
+        img.style.maxWidth = "300px";
+        img.style.margin = "10px";
+
+        // Append the image to the inline photos container
+        container.appendChild(img);
+    }
+
+    function removeAuctionCard(auctionId) {
+        // Build the auction card ID based on the auctionId parameter
+        const auctionCardId = "auctionCard_" + auctionId;
+        const auctionCard = document.getElementById(auctionCardId);
+
+        if (auctionCard) {
+            // Remove the auction card from its parent node
+            auctionCard.remove();
+            console.log(`Auction card ${auctionId} removed.`);
+        } else {
+            console.error("Auction card not found for auction ID:", auctionId);
         }
     }
+
+    function placeBid(auctionId) {
+        const bidderName = document.getElementById("bidderName").value;
+        const bidderEmail = document.getElementById("bidderEmail").value;
+        const bidAmount = parseFloat(document.getElementById("bidAmount_" + auctionId).value);
+
+        if (bidderName.trim() === "" || bidderEmail.trim() === "") {
+            alert("Some fields are empty. Please fill them.");
+            return;
+        }
+
+        const message = {
+            type: "place_bid",
+            data: {
+                auction_id: auctionId,
+                bidder_name: bidderName,
+                bidder_email: bidderEmail,
+                bid: bidAmount
+            }
+        };
+        ws.send(JSON.stringify(message));
+
+        document.getElementById("bidAmount_" + auctionId).value = "";
+
+        alert("Bid " + bidAmount + " was placed");
+
+        addOutgoingMessage("Placed bid for item in auction: " + auctionId + '.');
+    }
+
+    document.getElementById("listAuctionsBtn").addEventListener("click", function () {
+        const message = {
+            type: "list_ongoing_auctions",
+            data: {}
+        };
+        ws.send(JSON.stringify(message));
+        addOutgoingMessage("Requested fresh list of ongoing auctions.");
+    });
 
     function handleMessage(msg) {
         switch (msg.type) {
             case "ongoing_auctions":
-                updateAuctionSelect(msg.data.auctions);
-                updateAuctionListDisplay(msg.data.auctions);
+                refreshAuctionCards(msg.data.auctions);
                 addIncomingMessage("Updated auction list.");
                 break;
             case "auction_started":
-                // Add the new auction to the select if it's not already there.
-                addAuctionToSelect(msg.data);
                 addIncomingMessage("New auction started. Item: " + msg.data.item + ". Description: "
-                    + msg.data.description + ". Starting price: "+msg.data.starting_price +" (auction ID: "
+                    + msg.data.description + ". Starting price: " + msg.data.starting_price + " (auction ID: "
                     + msg.data.auction_id + ")");
+
+                addAuctionCard(msg.data.auction_id, msg.data.item, msg.data.description,
+                    msg.data.starting_price, msg.data.ends_at, true);
+                break;
+            case "item_photo_added":
+                addAuctionPhotoToCard(msg.data.auction_id, msg.data.photo);
                 break;
             case "you_bid_too_low":
                 addIncomingMessage("Bid too low for item: " + msg.data.item + " (auction ID: "
@@ -246,6 +296,7 @@
                     "Seller Name: " + msg.data.seller_name + "\n" +
                     "Seller Email: " + msg.data.seller_email
                 );
+                removeAuctionCard(msg.data.auction_id);
                 break;
             case "you_lost_bid":
                 addIncomingMessage("Sorry! You lost the bid for item: " + msg.data.item + ". Final price: "
@@ -255,48 +306,19 @@
                     "Item: " + msg.data.item + "\n" +
                     "Final Price: " + msg.data.final_price
                 );
+
+                removeAuctionCard(msg.data.auction_id);
                 break;
             case "auction_ended":
                 addIncomingMessage("Auction ended for item: " + msg.data.item + " (auction ID: " + msg.data.auction_id
                     + "). Verdict: " + msg.data.verdict);
-                removeAuctionFromSelect(msg.data.auction_id);
+
+                removeAuctionCard(msg.data.auction_id);
                 break;
             default:
                 addIncomingMessage("Received: " + JSON.stringify(msg));
         }
     }
-
-    document.getElementById("listAuctionsBtn").addEventListener("click", function () {
-        const message = {
-            type: "list_ongoing_auctions",
-            data: {}
-        };
-        ws.send(JSON.stringify(message));
-        addOutgoingMessage("Requested list of ongoing auctions.");
-    });
-
-    document.getElementById("placeBidBtn").addEventListener("click", function () {
-        const select = document.getElementById("auctionSelect");
-        const auctionId = select.value;
-        if (!auctionId) {
-            alert("Please select an auction from the list.");
-            return;
-        }
-        const bidderName = document.getElementById("bidderName").value;
-        const bidderEmail = document.getElementById("bidderEmail").value;
-        const bidAmount = parseFloat(document.getElementById("bidAmount").value);
-        const message = {
-            type: "place_bid",
-            data: {
-                auction_id: auctionId,
-                bidder_name: bidderName,
-                bidder_email: bidderEmail,
-                bid: bidAmount
-            }
-        };
-        ws.send(JSON.stringify(message));
-        addOutgoingMessage("Sent place_bid message for auction " + auctionId);
-    });
 </script>
 </body>
 </html>

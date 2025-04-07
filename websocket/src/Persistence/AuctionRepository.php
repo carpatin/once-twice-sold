@@ -51,9 +51,11 @@ class AuctionRepository
     {
         $auctions = [];
         foreach ($this->auctionsTable as $auctionId => $auctionRow) {
-            $auctions[] = Auction::createFromTableRow($auctionId, $auctionRow);
+            $auctions[$auctionRow['started_at']] = Auction::createFromTableRow($auctionId, $auctionRow);
         }
 
-        return $auctions;
+        krsort($auctions);
+
+        return array_values($auctions);
     }
 }

@@ -62,26 +62,32 @@
 <h1 style="text-align:center;">Once.. Twice.. Sold!</h1>
 <h2 style="text-align:center;">Seller</h2>
 <div class="section">
-    <h2>Start New Auction</h2>
+    <h2>Seller details</h2>
     <label>Seller Name:
         <input type="text" id="sellerName">
     </label>
     <label>Seller Email:
         <input type="email" id="sellerEmail">
     </label>
+</div>
+<div class="section">
+    <h2>New auction</h2>
     <label>Item:
         <input type="text" id="item">
     </label>
     <label>Description:
         <textarea id="description"></textarea>
     </label>
+    <label>Photo:
+        <input type="file" id="photos" multiple>
+    </label>
     <label>Starting Price:
         <input type="number" id="startingPrice">
     </label>
-    <label>Desired Price:
+    <label>Minimum Desired Price:
         <input type="number" id="desiredPrice">
     </label>
-    <label>Duration (seconds):
+    <label>Auction Duration (seconds):
         <input type="number" id="durationSeconds">
     </label>
     <button id="startAuctionBtn">Start Auction</button>
@@ -100,7 +106,7 @@
 </div>
 
 <script>
-    // Change the WebSocket URL to match your backend
+    // Creating the websocket connection and setting up event handlers
     const wsUrl = "ws://localhost:9502";
     const ws = new WebSocket(wsUrl);
 
@@ -152,11 +158,40 @@
         container.scrollTop = container.scrollHeight;
     }
 
+    function handleSendingPhotosForAuction(auctionId) {
+        const fileInput = document.getElementById("photos");
+        const files = fileInput.files;
+
+        if (files.length === 0) {
+            // no photos selected, we skip sending any photos
+            return;
+        }
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64Image = reader.result;
+                ws.send(JSON.stringify({
+                    type: "add_item_photo",
+                    data: {
+                        "auction_id": auctionId,
+                        "photo": base64Image
+                    },
+                }));
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     function handleMessage(msg) {
         switch (msg.type) {
             case "you_started_auction":
                 addIncomingMessage("Auction started successfully. Item: " + msg.data.item + ". Auction ID: "
                     + msg.data.auction_id);
+
+                // after starting the auction send photos, if any
+                handleSendingPhotosForAuction(msg.data.auction_id);
+
                 break;
             case "you_sold_item":
                 addIncomingMessage("You sold the item: " + msg.data.item + ". Sold for " + msg.data.final_price + " to "

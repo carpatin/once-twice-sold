@@ -25,9 +25,9 @@ class Auction
         private float $desiredPrice,
         private int $startedAt,
         private int $endsAt,
-        private ?float $highestBidderPrice,
-        private ?int $highestBidderId,
-        private ?string $allBiddersIds,
+        private float $highestBidderPrice = 0,
+        private int $highestBidderId = 0,
+        private string $allBiddersIds = '',
     ) {
         //
     }
@@ -48,9 +48,6 @@ class Auction
             $message->getDesiredPrice(),
             $startedAtTimestamp,
             $endsAtTimestamp,
-            null,
-            null,
-            null,
         );
     }
 
@@ -76,7 +73,6 @@ class Auction
     public function toTableRow(): array
     {
         return [
-            'uuid'                 => $this->uuid,
             'state'                => $this->state,
             'verdict'              => $this->verdict,
             'seller_id'            => $this->sellerId,
