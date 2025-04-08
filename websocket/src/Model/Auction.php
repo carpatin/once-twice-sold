@@ -185,12 +185,12 @@ class Auction
         return $this->endsAt;
     }
 
-    public function getHighestBidderPrice(): ?float
+    public function getHighestBidderPrice(): float
     {
         return $this->highestBidderPrice;
     }
 
-    public function getHighestBidderId(): ?int
+    public function getHighestBidderId(): int
     {
         return $this->highestBidderId;
     }

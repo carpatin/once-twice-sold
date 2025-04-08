@@ -44,11 +44,13 @@ readonly class ListOngoingAuctionsHandler implements MessageHandlerInterface
             $auctionsArray[] = [
                 'auction_id'     => $auction->getUuid(),
                 'item'           => $auction->getItem(),
+                'description'    => $auction->getDescription(),
                 'starting_price' => $auction->getStartingPrice(),
                 'started_at'     => (new DateTime())
                     ->setTimestamp($auction->getStartedAt())->format(DateTime::ATOM),
                 'ends_at'        => (new DateTime())
                     ->setTimestamp($auction->getEndsAt())->format(DateTime::ATOM),
+                'highest_bid'    => $auction->getHighestBidderPrice(),
                 'photos'         => $photosArray,
             ];
         }

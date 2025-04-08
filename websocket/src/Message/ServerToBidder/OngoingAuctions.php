@@ -15,10 +15,12 @@ use OnceTwiceSold\Message\MessageTypeEnum;
  *    {
  *      "auction_id": "uuid",
  *      "item": "Vintage Watch",
+ *      "description": "A vintage watch",
  *      "starting_price": 100,
  *      "started_at": "2025-04-01T09:30:00Z",
  *      "ends_at": "2025-04-01T10:30:00Z",
  *      "photos": ["<base64>","<base64>","<base64>"]
+ *      "highest_bid": 120
  *    }
  *   ]
  *  }

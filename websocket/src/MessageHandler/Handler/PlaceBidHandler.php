@@ -48,6 +48,7 @@ readonly class PlaceBidHandler implements MessageHandlerInterface
             $pushCallback([
                 $bidderClientId => new YouBidTooLow([
                     'auction_id'     => $auction->getUuid(),
+                    'item'           => $auction->getItem(),
                     'your_bid'       => $message->getBid(),
                     'starting_price' => $auction->getStartingPrice(),
                 ]),

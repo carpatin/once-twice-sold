@@ -3,51 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Once.. Twice.. Sold! - Home</title>
-    <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 30px;
-        }
-
-        .btn {
-            display: inline-block;
-            margin: 10px;
-            padding: 20px 40px;
-            font-size: 1.5em;
-            background-color: #333;
-            color: #e0e0e0;
-            text-decoration: none;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #555;
-        }
-    </style>
+    <!-- Bootstrap 4.5.2 CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-<div class="container">
-    <h1>Once.. Twice.. Sold!</h1>
-    <a href="seller.html" class="btn">I am a seller</a>
-    <a href="bidder.html" class="btn">I am a bidder</a>
+<body class="bg-dark text-light d-flex align-items-center justify-content-center vh-100">
+<div class="container text-center">
+    <h1 class="mb-4">Once.. Twice.. Sold!</h1>
+    <div>
+        <a href="seller.html" class="btn btn-secondary btn-lg mx-2">I am a seller</a>
+        <a href="bidder.html" class="btn btn-secondary btn-lg mx-2">I am a bidder</a>
+    </div>
 </div>
 </body>
 </html>

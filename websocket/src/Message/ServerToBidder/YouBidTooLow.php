@@ -12,6 +12,7 @@ use OnceTwiceSold\Message\MessageTypeEnum;
  *  "type": "you_bid_too_low",
  *  "data": {
  *   "auction_id": "uuid",
+ *   "item" : "Vintage watch",
  *   "your_bid": 140
  *   "starting_price": 150
  *  }
@@ -21,6 +22,7 @@ class YouBidTooLow extends AbstractMessage
 {
     private const array KEYS = [
         'auction_id',
+        'item',
         'your_bid',
         'starting_price',
     ];

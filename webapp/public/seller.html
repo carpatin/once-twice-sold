@@ -3,106 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <title>Once.. Twice.. Sold! - Seller</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        .section {
-            width: 50%; /* Limits the width to 50% of the viewport */
-            margin: 20px auto; /* Centers the section horizontally with 20px margin on top and bottom */
-            border: 1px solid #333;
-            padding: 20px;
-            border-radius: 5px;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #444;
-            border-radius: 3px;
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-        }
-
-        button {
-            padding: 10px 15px;
-            background-color: #333;
-            color: #e0e0e0;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #555;
-        }
-
-        .response-card {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-            word-wrap: break-word;
-        }
-
-        #responseContainer {
-            max-height: 300px;
+        #incomingContainer, #outgoingContainer, #connectionStatusContainer {
+            max-height: 200px;
             overflow-y: auto;
         }
     </style>
 </head>
-<body>
-<h1 style="text-align:center;">Once.. Twice.. Sold!</h1>
-<h2 style="text-align:center;">Seller</h2>
-<div class="section">
-    <h2>Seller details</h2>
-    <label>Seller Name:
-        <input type="text" id="sellerName">
-    </label>
-    <label>Seller Email:
-        <input type="email" id="sellerEmail">
-    </label>
-</div>
-<div class="section">
-    <h2>New auction</h2>
-    <label>Item:
-        <input type="text" id="item">
-    </label>
-    <label>Description:
-        <textarea id="description"></textarea>
-    </label>
-    <label>Photo:
-        <input type="file" id="photos" multiple>
-    </label>
-    <label>Starting Price:
-        <input type="number" id="startingPrice">
-    </label>
-    <label>Minimum Desired Price:
-        <input type="number" id="desiredPrice">
-    </label>
-    <label>Auction Duration (seconds):
-        <input type="number" id="durationSeconds">
-    </label>
-    <button id="startAuctionBtn">Start Auction</button>
-</div>
-<div class="section">
-    <h2>Incoming Messages</h2>
-    <div id="incomingContainer"></div>
-</div>
-<div class="section">
-    <h2>Outgoing Messages</h2>
-    <div id="outgoingContainer"></div>
-</div>
-<div class="section">
-    <h2>Server Communication</h2>
-    <div id="consoleContainer"></div>
+<body class="bg-dark text-light">
+<div class="container py-4">
+    <h1 class="text-center mb-4">Once.. Twice.. Sold!</h1>
+    <h2 class="text-center mb-4">Seller</h2>
+
+    <!-- Connection Status -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">Connection Status</h2>
+        </div>
+        <div class="card-body">
+            <div id="connectionStatusContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
+
+    <!-- Seller details card -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">Seller Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="sellerName">Seller Name:</label>
+                <input type="text" id="sellerName" class="form-control bg-dark text-light">
+            </div>
+            <div class="form-group">
+                <label for="sellerEmail">Seller Email:</label>
+                <input type="email" id="sellerEmail" class="form-control bg-dark text-light">
+            </div>
+        </div>
+    </div>
+
+    <!-- New auction card -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">New Auction</h2>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="item">Item:</label>
+                <input type="text" id="item" class="form-control bg-dark text-light">
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" class="form-control bg-dark text-light"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="photos">Photo:</label>
+                <input type="file" id="photos" class="form-control bg-dark text-light" multiple>
+            </div>
+            <div class="form-group">
+                <label for="startingPrice">Starting Price:</label>
+                <input type="number" id="startingPrice" class="form-control bg-dark text-light">
+            </div>
+            <div class="form-group">
+                <label for="desiredPrice">Minimum Desired Price:</label>
+                <input type="number" id="desiredPrice" class="form-control bg-dark text-light">
+            </div>
+            <div class="form-group">
+                <label for="durationSeconds">Auction Duration (seconds):</label>
+                <input type="number" id="durationSeconds" class="form-control bg-dark text-light">
+            </div>
+            <button id="startAuctionBtn" class="btn btn-primary">Start Auction</button>
+        </div>
+    </div>
+
+    <!-- Incoming messages card -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">Incoming Messages</h2>
+        </div>
+        <div class="card-body">
+            <div id="incomingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
+
+    <!-- Outgoing messages card -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">Outgoing Messages</h2>
+        </div>
+        <div class="card-body">
+            <div id="outgoingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -111,7 +105,7 @@
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
-        addConsoleMessage("Connected to WebSocket server.");
+        addConnStatusMessage("Connected to WebSocket server.");
     };
 
     ws.onmessage = function (event) {
@@ -119,22 +113,22 @@
             const msg = JSON.parse(event.data);
             handleMessage(msg);
         } catch (error) {
-            addConsoleMessage("Error parsing message: " + error);
+            addConnStatusMessage("Error parsing message: " + error);
         }
     };
 
     ws.onerror = function (error) {
-        addConsoleMessage("WebSocket error: " + error);
+        addConnStatusMessage("WebSocket error: " + error);
     };
 
     ws.onclose = function () {
-        addConsoleMessage("WebSocket connection closed.");
+        addConnStatusMessage("WebSocket connection closed.");
     };
+
 
     function addIncomingMessage(text) {
         const container = document.getElementById("incomingContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
@@ -143,16 +137,14 @@
     function addOutgoingMessage(text) {
         const container = document.getElementById("outgoingContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
 
-    function addConsoleMessage(text) {
-        const container = document.getElementById("consoleContainer");
+    function addConnStatusMessage(text) {
+        const container = document.getElementById("connectionStatusContainer");
         const div = document.createElement("div");
-        div.className = "response-card";
         div.textContent = text;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
@@ -178,6 +170,8 @@
                         "photo": base64Image
                     },
                 }));
+
+                addOutgoingMessage("[" + auctionId + "] add_item_photo");
             };
             reader.readAsDataURL(file);
         });
@@ -186,39 +180,39 @@
     function handleMessage(msg) {
         switch (msg.type) {
             case "you_started_auction":
-                addIncomingMessage("Auction started successfully. Item: " + msg.data.item + ". Auction ID: "
-                    + msg.data.auction_id);
-
                 // after starting the auction send photos, if any
                 handleSendingPhotosForAuction(msg.data.auction_id);
 
+                addIncomingMessage("[" + msg.data.auction_id + "] you_started_auction: " + msg.data.item);
                 break;
             case "you_sold_item":
-                addIncomingMessage("You sold the item: " + msg.data.item + ". Sold for " + msg.data.final_price + " to "
-                    + msg.data.buyer_name + " ( " + msg.data.buyer_email + " )");
                 alert(
                     "Item sold!\n" +
                     "Final Price: " + msg.data.final_price + "\n" +
                     "Buyer Name: " + msg.data.buyer_name + "\n" +
                     "Buyer Email: " + msg.data.buyer_email
                 );
+
+                addIncomingMessage("[" + msg.data.auction_id + "] you_sold_item: " + msg.data.item + "; final price: "
+                    + msg.data.final_price + "; buyer: " + msg.data.buyer_name + " ( " + msg.data.buyer_email + " )");
                 break;
             case "you_did_not_sell_item":
-                addIncomingMessage("You didn't sell the item: " + msg.data.item + ". Final price: "
-                    + msg.data.final_price + ". Desired price:" + msg.data.desired_price);
                 alert(
                     "Item not sold!\n" +
                     "Final Price: " + msg.data.final_price + "\n" +
                     "Desired Price: " + msg.data.desired_price
                 );
+
+                addIncomingMessage("[" + msg.data.auction_id + "] you_did_not_sell_item: " + msg.data.item
+                    + "; final price: " + msg.data.final_price + "; desired price:" + msg.data.desired_price);
                 break;
             case "new_high_bid":
-                addIncomingMessage("New high bid for item: " + msg.data.item + " (auction ID: "
-                    + msg.data.auction_id + "). Highest bid: " + msg.data.bid);
+                addIncomingMessage("[" + msg.data.auction_id + "] new_high_bid: " + msg.data.item
+                    + "; bid: " + msg.data.bid);
                 break;
             case "auction_ended":
-                addIncomingMessage("Auction ended for item: " + msg.data.item + " (auction ID: " + msg.data.auction_id
-                    + "). Verdict: " + msg.data.verdict);
+                addIncomingMessage("[" + msg.data.auction_id + "] auction_ended: " + msg.data.item
+                    + "; verdict: " + msg.data.verdict);
                 break;
             default:
                 addIncomingMessage("Received: " + JSON.stringify(msg));
@@ -247,7 +241,8 @@
             }
         };
         ws.send(JSON.stringify(message));
-        addOutgoingMessage("Sent message to start new auction");
+
+        addOutgoingMessage("start_auction");
     });
 </script>
 </body>

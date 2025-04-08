@@ -13,13 +13,19 @@
             margin-top: 10px;
         }
 
+        .custom-badge {
+            font-size: 1.25rem; /* Adjust the font size as needed */
+            padding: 0.5rem 1rem; /* Adjust padding for better alignment */
+            margin-bottom: 0.5rem;
+        }
+
         .inline-photos img {
             width: 32%;
             border-radius: 4px;
             object-fit: cover;
         }
 
-        #incomingContainer, #outgoingContainer, #consoleContainer {
+        #incomingContainer, #outgoingContainer, #connectionStatusContainer {
             max-height: 200px;
             overflow-y: auto;
         }
@@ -30,10 +36,21 @@
     <h1 class="text-center mb-4">Once.. Twice.. Sold!</h1>
     <h2 class="text-center mb-4">Bidder</h2>
 
+    <!-- Connection Status -->
+    <div class="card bg-secondary mb-4">
+        <div class="card-header">
+            <h2 class="mb-0">Connection Status</h2>
+        </div>
+        <div class="card-body">
+            <div id="connectionStatusContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+        </div>
+    </div>
     <!-- Bidder Info -->
     <div class="card bg-secondary mb-4">
-        <div class="card-body">
+        <div class="card-header">
             <h2 class="card-title">Bidder Information</h2>
+        </div>
+        <div class="card-body">
             <div class="form-group">
                 <label for="bidderName">Bidder Name:</label>
                 <input type="text" id="bidderName" class="form-control bg-dark text-light border-secondary">
@@ -47,8 +64,10 @@
 
     <!-- Auctions -->
     <div class="card bg-secondary mb-4">
-        <div class="card-body">
+        <div class="card-header">
             <h2 class="card-title">Auctions</h2>
+        </div>
+        <div class="card-body">
             <button id="listAuctionsBtn" class="btn btn-primary">Refresh auctions</button>
             <!-- Auction cards will be appended here as list items -->
             <ul id="currentAuctions" class="list-unstyled d-flex flex-wrap gap-3 mb-0 mt-3">
@@ -58,35 +77,31 @@
 
     <!-- Incoming Messages -->
     <div class="card bg-secondary mb-4">
-        <div class="card-body">
+        <div class="card-header">
             <h2 class="card-title">Incoming Messages</h2>
+        </div>
+        <div class="card-body">
             <div id="incomingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
         </div>
     </div>
 
     <!-- Outgoing Messages -->
     <div class="card bg-secondary mb-4">
-        <div class="card-body">
+        <div class="card-header">
             <h2 class="card-title">Outgoing Messages</h2>
-            <div id="outgoingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
         </div>
-    </div>
-
-    <!-- Server Communication -->
-    <div class="card bg-secondary mb-4">
         <div class="card-body">
-            <h2 class="card-title">Server Communication</h2>
-            <div id="consoleContainer" class="p-2 border border-secondary rounded bg-dark"></div>
+            <div id="outgoingContainer" class="p-2 border border-secondary rounded bg-dark"></div>
         </div>
     </div>
 </div>
 <script>
-    // Adjust the WebSocket URL to match your backend
+    // Creating the websocket connection and setting up event handlers
     const wsUrl = "ws://localhost:9502";
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
-        addConsoleMessage("Connected to WebSocket server.");
+        addConnStatusMessage("Connected to WebSocket server.");
     };
 
     ws.onmessage = function (event) {
@@ -94,17 +109,18 @@
             const msg = JSON.parse(event.data);
             handleMessage(msg);
         } catch (e) {
-            addConsoleMessage("Error parsing message: " + e);
+            addConnStatusMessage("Error parsing message: " + e);
         }
     };
 
     ws.onerror = function (error) {
-        addConsoleMessage("WebSocket error: " + error);
+        addConnStatusMessage("WebSocket error: " + error);
     };
 
     ws.onclose = function () {
-        addConsoleMessage("WebSocket connection closed.");
+        addConnStatusMessage("WebSocket connection closed.");
     };
+
 
     function addIncomingMessage(text) {
         const container = document.getElementById("incomingContainer");
@@ -122,8 +138,8 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    function addConsoleMessage(text) {
-        const container = document.getElementById("consoleContainer");
+    function addConnStatusMessage(text) {
+        const container = document.getElementById("connectionStatusContainer");
         const div = document.createElement("div");
         div.textContent = text;
         container.appendChild(div);
@@ -134,7 +150,13 @@
         auctions.forEach(auction => {
             const auctionCard = document.getElementById("auctionCard_" + auction.auction_id);
             if (null === auctionCard) {
-                addAuctionCard(auction.auction_id, auction.item, auction.description, auction.starting_price, auction.ends_at);
+                if (auction.highest_bid > 0) {
+                    addAuctionCard(auction.auction_id, auction.item, auction.description, auction.starting_price,
+                        auction.ends_at, false, auction.highest_bid);
+                } else {
+                    addAuctionCard(auction.auction_id, auction.item, auction.description, auction.starting_price,
+                        auction.ends_at);
+                }
                 auction.photos.forEach(photo => {
                     addAuctionPhotoToCard(auction.auction_id, photo);
                 });
@@ -142,11 +164,12 @@
         });
     }
 
-    function addAuctionCard(auctionId, item, description, startingPrice, endsAt, isBefore = false) {
+    function addAuctionCard(auctionId, item, description, startingPrice, endsAt, isBefore = false, highestBid = "none yet!") {
         const auctionsContainer = document.getElementById("currentAuctions");
         const auctionItem = document.createElement("li");
         auctionItem.id = "auctionCard_" + auctionId;
         auctionItem.classList.add("mb-3");
+        auctionItem.classList.add("w-100");
         const endsAtDate = new Date(endsAt);
         const endsAtFormatted =
             endsAtDate.toLocaleString('en-US', {
@@ -162,22 +185,26 @@
         auctionItem.innerHTML = `
             <div class="card bg-dark text-light">
               <div class="card-body">
-                <h4 class="card-title"><strong>${item}</strong> (${auctionId})</h4>
+                <div class="d-flex justify-content-between align-items-center">
+                  <h4 class="card-title m-0"><strong>${item}</strong></h4>
+                  <div class="d-flex flex-column align-items-end">
+                    <span class="badge bg-warning custom-badge">Highest bid: <span id="highestBid_${auctionId}">${highestBid}</span></span>
+                    <span class="badge bg-success custom-badge">Your bid: <span id="yourBid_${auctionId}">none yet!</span>
+                  </div>
+                </div>
                 <p class="card-text">${description}</p>
-                <p class="card-text"><strong>Starting Price:</strong> ${startingPrice}</p>
-                <p class="card-text"><strong>Ends At:</strong> ${endsAtFormatted}</p>
+                <p class="card-text"><strong>Auction UUID:</strong> ${auctionId}</p>
+                <p class="card-text"><strong>Starting price:</strong> ${startingPrice}</p>
+                <p class="card-text"><strong>Ends at:</strong> ${endsAtFormatted}</p>
                 <div class="inline-photos" id="auction_${auctionId}_photos"></div>
                 <div class="card-text">
-                  <div class="row justify-content-end">
-                    <div class="col-md-4">
-                        <div class="input-group mb-3">
-                          <input id="bidAmount_${auctionId}"type="number" class="form-control bg-dark text-light" placeholder="Enter your bid">
-                          <div class="input-group-append">
-                            <button onclick="placeBid('${auctionId}')" class="btn btn-primary" type="button">Place Bid</button>
-                          </div>
-                        </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span id="bidMessage_${auctionId}"></span>
+                    <div class="d-flex ms-auto">
+                      <input id="bidAmount_${auctionId}" type="number" class="bg-dark text-light mr-2" placeholder="Enter your bid">
+                      <button onclick="placeBid('${auctionId}')" class="btn btn-primary" type="button">Place Bid</button>
                     </div>
-                   </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -228,6 +255,11 @@
         const bidderEmail = document.getElementById("bidderEmail").value;
         const bidAmount = parseFloat(document.getElementById("bidAmount_" + auctionId).value);
 
+        if (isNaN(bidAmount)) {
+            alert("The bid amount is not a number.");
+            return;
+        }
+
         if (bidderName.trim() === "" || bidderEmail.trim() === "") {
             alert("Some fields are empty. Please fill them.");
             return;
@@ -244,11 +276,86 @@
         };
         ws.send(JSON.stringify(message));
 
+        // update badge with "Your bid"
+        document.getElementById("yourBid_" + auctionId).innerText = bidAmount;
+        // empty some values and texts for better UX
         document.getElementById("bidAmount_" + auctionId).value = "";
+        document.getElementById("bidMessage_" + auctionId).innerText = "";
 
-        alert("Bid " + bidAmount + " was placed");
+        addOutgoingMessage("[" + auctionId + "] place_bid: " + bidAmount);
+    }
 
-        addOutgoingMessage("Placed bid for item in auction: " + auctionId + '.');
+    function notifyOfBidTooLow(auctionId, startingPrice) {
+        document.getElementById("bidMessage_" + auctionId).innerText = "Bid too low! Starting price is "
+            + startingPrice;
+    }
+
+    function updateAuctionHighestBid(auctionId, bidAmount) {
+        // update badge with "Highest bid"
+        document.getElementById("highestBid_" + auctionId).innerText = bidAmount;
+    }
+
+    function handleMessage(msg) {
+        // logging to console for presentation purposes
+        console.log(msg);
+
+        switch (msg.type) {
+            case "ongoing_auctions":
+                refreshAuctionCards(msg.data.auctions);
+                addIncomingMessage("ongoing_auctions: " + msg.data.auctions.length + " auctions");
+                break;
+            case "auction_started":
+                addAuctionCard(msg.data.auction_id, msg.data.item, msg.data.description,
+                    msg.data.starting_price, msg.data.ends_at, true);
+                addIncomingMessage("[" + msg.data.auction_id + "] auction_started: " + msg.data.item);
+                break;
+            case "item_photo_added":
+                addAuctionPhotoToCard(msg.data.auction_id, msg.data.photo);
+                addIncomingMessage("[" + msg.data.auction_id + "] item_photo_added: " + msg.data.item);
+                break;
+            case "you_bid_too_low":
+                notifyOfBidTooLow(msg.data.auction_id, msg.data.starting_price);
+                addIncomingMessage("[" + msg.data.auction_id + "] you_bid_too_low: " + msg.data.item + " - your bid: "
+                    + msg.data.your_bid + " - starting: " + msg.data.starting_price);
+                break;
+            case "new_high_bid":
+                updateAuctionHighestBid(msg.data.auction_id, msg.data.bid);
+                addIncomingMessage("[" + msg.data.auction_id + "] new_high_bid: " + msg.data.item + " - " + msg.data.bid);
+                break;
+            case "you_won_item":
+                alert(
+                    "You won item!\n" +
+                    "Item: " + msg.data.item + "\n" +
+                    "Final Price: " + msg.data.final_price + "\n" +
+                    "Seller Name: " + msg.data.seller_name + "\n" +
+                    "Seller Email: " + msg.data.seller_email
+                );
+
+                removeAuctionCard(msg.data.auction_id);
+                addIncomingMessage("[" + msg.data.auction_id + "] you_won_item: " + msg.data.item
+                    + "; final price: " + msg.data.final_price + "; seller: " + msg.data.seller_name
+                    + " ( " + msg.data.seller_email + " )");
+                break;
+            case "you_lost_bid":
+                alert(
+                    "You lost bid!\n" +
+                    "Item: " + msg.data.item + "\n" +
+                    "Final Price: " + msg.data.final_price
+                );
+
+                removeAuctionCard(msg.data.auction_id);
+                addIncomingMessage("[" + msg.data.auction_id + "] you_lost_bid: " + msg.data.item + "; final price: "
+                    + msg.data.final_price);
+
+                break;
+            case "auction_ended":
+                removeAuctionCard(msg.data.auction_id);
+                addIncomingMessage("[" + msg.data.auction_id + "] auction_ended: " + msg.data.item + "; verdict: "
+                    + msg.data.verdict);
+                break;
+            default:
+                addIncomingMessage("Received: " + JSON.stringify(msg));
+        }
     }
 
     document.getElementById("listAuctionsBtn").addEventListener("click", function () {
@@ -257,68 +364,9 @@
             data: {}
         };
         ws.send(JSON.stringify(message));
-        addOutgoingMessage("Requested fresh list of ongoing auctions.");
+
+        addOutgoingMessage("list_ongoing_auctions");
     });
-
-    function handleMessage(msg) {
-        switch (msg.type) {
-            case "ongoing_auctions":
-                refreshAuctionCards(msg.data.auctions);
-                addIncomingMessage("Updated auction list.");
-                break;
-            case "auction_started":
-                addIncomingMessage("New auction started. Item: " + msg.data.item + ". Description: "
-                    + msg.data.description + ". Starting price: " + msg.data.starting_price + " (auction ID: "
-                    + msg.data.auction_id + ")");
-
-                addAuctionCard(msg.data.auction_id, msg.data.item, msg.data.description,
-                    msg.data.starting_price, msg.data.ends_at, true);
-                break;
-            case "item_photo_added":
-                addAuctionPhotoToCard(msg.data.auction_id, msg.data.photo);
-                break;
-            case "you_bid_too_low":
-                addIncomingMessage("Bid too low for item: " + msg.data.item + " (auction ID: "
-                    + msg.data.auction_id + "). Your bid: " + msg.data.your_bid + ". Starting Price: "
-                    + msg.data.starting_price);
-                break;
-            case "new_high_bid":
-                addIncomingMessage("New high bid for item: " + msg.data.item + " (auction ID: "
-                    + msg.data.auction_id + "). Highest bid: " + msg.data.bid);
-                break;
-            case "you_won_item":
-                addIncomingMessage("Congratulations! You won the item: " + msg.data.item + ". Final price: "
-                    + msg.data.final_price + ". Seller: " + msg.data.seller_name + " ( " + msg.data.seller_email + " )");
-                alert(
-                    "You won item!\n" +
-                    "Item: " + msg.data.item + "\n" +
-                    "Final Price: " + msg.data.final_price + "\n" +
-                    "Seller Name: " + msg.data.seller_name + "\n" +
-                    "Seller Email: " + msg.data.seller_email
-                );
-                removeAuctionCard(msg.data.auction_id);
-                break;
-            case "you_lost_bid":
-                addIncomingMessage("Sorry! You lost the bid for item: " + msg.data.item + ". Final price: "
-                    + msg.data.final_price);
-                alert(
-                    "You lost bid!\n" +
-                    "Item: " + msg.data.item + "\n" +
-                    "Final Price: " + msg.data.final_price
-                );
-
-                removeAuctionCard(msg.data.auction_id);
-                break;
-            case "auction_ended":
-                addIncomingMessage("Auction ended for item: " + msg.data.item + " (auction ID: " + msg.data.auction_id
-                    + "). Verdict: " + msg.data.verdict);
-
-                removeAuctionCard(msg.data.auction_id);
-                break;
-            default:
-                addIncomingMessage("Received: " + JSON.stringify(msg));
-        }
-    }
 </script>
 </body>
 </html>
