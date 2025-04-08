@@ -9,6 +9,7 @@ use DateMalformedStringException;
 use Exception;
 use JsonException;
 use OnceTwiceSold\Message\AbstractMessage;
+use OnceTwiceSold\Message\ConnectionLostMessage;
 use OnceTwiceSold\Message\ErrorMessage;
 use OnceTwiceSold\Message\MessageFactory;
 use OnceTwiceSold\Message\ServerToSeller\YouStartedAuction;
@@ -56,6 +57,11 @@ class WebSocketServer
         $this->photosRepository->initializeTable();
     }
 
+    public function start(): void
+    {
+        $this->server->start();
+    }
+
     public function onStart(Server $server): void
     {
         echo "Once,Twice...Sold server started at {$this->listenHost}:{$this->listenPort}".PHP_EOL;
@@ -89,16 +95,13 @@ class WebSocketServer
     public function onClose(Server $server, int $connection): void
     {
         echo "Connection close: $connection".PHP_EOL;
+
+        $this->handleClientLeaving($server, $connection);
     }
 
-    public function onDisconnect(Server $server, int $fd): void
+    public function onDisconnect(Server $server, int $connection): void
     {
-        echo "Connection disconnect: $fd".PHP_EOL;
-    }
-
-    public function start(): void
-    {
-        $this->server->start();
+        echo "Connection disconnect: $connection".PHP_EOL;
     }
 
     private function prepareClients(int $connection, Server $server): Clients
@@ -160,5 +163,14 @@ class WebSocketServer
                 $handler->handle($participants, $message, $pushCallback);
             });
         }
+    }
+
+    private function handleClientLeaving(Server $server, int $connection): void
+    {
+        $clients = $this->prepareClients($connection, $server);
+        $pushCallback = $this->preparePushCallback($server);
+        $message = new ConnectionLostMessage();
+        $handler = $this->messageHandlerRegistry->getHandler($message);
+        $handler->handle($clients, $message, $pushCallback);
     }
 }

@@ -35,4 +35,11 @@ class ParticipantRepository
 
         return Participant::createFromTableRow($participantId, $row);
     }
+
+    public function removeById(int $id): void
+    {
+        if (!$this->table->exists((string)$id)) {
+            $this->table->del((string)$id);
+        }
+    }
 }

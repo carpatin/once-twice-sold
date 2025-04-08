@@ -58,4 +58,30 @@ class AuctionRepository
 
         return array_values($auctions);
     }
+
+    public function loadBySeller(int $sellerId): array
+    {
+        $auctions = [];
+        foreach ($this->auctionsTable as $auctionId => $auctionRow) {
+            if ($sellerId !== $auctionRow['seller_id']) {
+                continue;
+            }
+            $auctions[] = Auction::createFromTableRow($auctionId, $auctionRow);
+        }
+
+        return $auctions;
+    }
+
+    public function loadByHighestBidder(int $bidderId): array
+    {
+        $auctions = [];
+        foreach ($this->auctionsTable as $auctionId => $auctionRow) {
+            if ($bidderId !== $auctionRow['highest_bidder_id']) {
+                continue;
+            }
+            $auctions[] = Auction::createFromTableRow($auctionId, $auctionRow);
+        }
+
+        return $auctions;
+    }
 }

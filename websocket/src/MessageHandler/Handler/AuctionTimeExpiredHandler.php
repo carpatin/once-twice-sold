@@ -17,6 +17,7 @@ use OnceTwiceSold\MessageHandler\MessageHandlerInterface;
 use OnceTwiceSold\Model\Auction;
 use OnceTwiceSold\Persistence\AuctionRepository;
 use OnceTwiceSold\Persistence\ParticipantRepository;
+use OnceTwiceSold\Persistence\PhotoRepository;
 use OnceTwiceSold\WebSocketServer\Clients;
 use RuntimeException;
 
@@ -28,6 +29,7 @@ readonly class AuctionTimeExpiredHandler implements MessageHandlerInterface
 {
     public function __construct(
         private AuctionRepository $auctionsRepository,
+        private PhotoRepository $photoRepository,
         private ParticipantRepository $participantRepository,
     ) {
         //
@@ -43,9 +45,12 @@ readonly class AuctionTimeExpiredHandler implements MessageHandlerInterface
             throw new RuntimeException('Auction not found');
         }
 
+        // close the auction and decide the verdict
         $auction->closeAuction();
         $verdict = $auction->obtainVerdict();
         $this->auctionsRepository->persist($auction);
+        // remove photos for the closed auction
+        $this->photoRepository->removeByAuctionId($auction->getUuid());
 
         $participants = [$auction->getSellerId(), ...$auction->getAllBiddersIds()];
         // send auction_ended message to everyone

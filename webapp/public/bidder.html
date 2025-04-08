@@ -256,12 +256,18 @@
         const bidAmount = parseFloat(document.getElementById("bidAmount_" + auctionId).value);
 
         if (isNaN(bidAmount)) {
-            alert("The bid amount is not a number.");
+            alert("The bid amount is not a number!");
+            return;
+        }
+
+        const highestBid = parseFloat(document.getElementById("highestBid_" + auctionId).innerText);
+        if (bidAmount <= highestBid) {
+            alert("You cannot bid below the highest bid!");
             return;
         }
 
         if (bidderName.trim() === "" || bidderEmail.trim() === "") {
-            alert("Some fields are empty. Please fill them.");
+            alert("Some fields are empty! Please fill them.");
             return;
         }
 

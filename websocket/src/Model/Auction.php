@@ -128,6 +128,11 @@ class Auction
         $this->state = self::STATE_CLOSED;
     }
 
+    public function setVerdictToUnsold(): void
+    {
+        $this->verdict = self::VERDICT_UNSOLD;
+    }
+
     public function obtainVerdict(): string
     {
         $this->verdict = ($this->highestBidderPrice >= $this->desiredPrice) ? self::VERDICT_SOLD : self::VERDICT_UNSOLD;

@@ -10,6 +10,7 @@ enum MessageTypeEnum: string
      * General purpose messages
      */
     case ERROR = 'error';
+    case CONNECTION_LOST = 'connection_lost';
 
     /**
      * Seller -> Server

@@ -228,6 +228,11 @@
         const desiredPrice = parseFloat(document.getElementById("desiredPrice").value);
         const durationSeconds = parseInt(document.getElementById("durationSeconds").value);
 
+        if (!sellerName || !sellerEmail || !item || !description || !startingPrice || !desiredPrice || !durationSeconds) {
+            alert("Some fields are empty! Please fill them.");
+            return;
+        }
+
         const message = {
             type: "start_auction",
             data: {
