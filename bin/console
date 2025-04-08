@@ -7,12 +7,12 @@ cd "$(dirname -- "$0")/../" || exit 1
 if [ $# -eq 0 ]; then
     printf "CLI tool that automates Docker-related instructions for the local environment!\n\n"
     printf "Available commands:\n\n"
-    printf "clean-start - Removes the stack, builds a new one, and starts the containers\n"
-    printf "start       - Starts the containers\n"
-    printf "build       - Builds the containers\n"
-    printf "stop        - Stops the containers\n"
-    printf "down        - Removes the containers\n"
-    printf "composer    - Forwards CLI Composer commands to the PHP container\n"
+    printf "clean-start           - Removes the stack, builds a new one, and starts the containers\n"
+    printf "start                 - Starts the containers\n"
+    printf "build                 - Builds the containers\n"
+    printf "stop                  - Stops the containers\n"
+    printf "down                  - Removes the containers\n"
+    printf "websocket-composer    - Forwards CLI Composer commands to websocket PHP container\n"
 
     exit 0
 fi
